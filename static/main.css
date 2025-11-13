@@ -1,0 +1,477 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.horizontal-panes {
+    /* Arrange left and right panes horizontally */
+    display: flex;
+    /* Fill available height */
+    height: 100vh;
+    /* Fill available width */
+    width: 100vw;
+    padding: 3px;
+    gap: 3px;
+    box-sizing: border-box;
+}
+
+.left-pane {
+    /* Grows to fill remaining horizontal space */
+    flex: 1;
+    /* Allows vertical layout inside */
+    display: flex;
+    /* Stack top and bottom panes vertically */
+    flex-direction: column;
+    height: 100%;
+}
+
+.right-pane {
+    /* Prevent shrinking */
+    flex-shrink: 0;
+    width: auto;
+    height: 100%;
+}
+
+.vertical-panes {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 3px;
+}
+
+.search-pane {
+    flex-shrink: 0;
+    height: auto;
+}
+
+.top-pane {
+    /* Grows to fill available vertical space */
+    flex: 1;
+    min-height: 0;
+}
+
+.bottom-pane {
+    /* Only as tall as its content */
+    flex-shrink: 0;
+    height: auto;
+}
+
+.wrapper {
+    border: solid #ff00ff 2px;
+    border-radius: 3px;
+    box-sizing: border-box;
+    padding: 3px;
+}
+
+.button-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: #333;
+}
+
+.button-row button {
+    background-color: #ff00ff;
+    color: white;
+    border: none;
+    /* rounded corners */
+    border-radius: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* smooth hover effect */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100px;
+}
+
+.button-row button:hover:not(:disabled) {
+    background-color: #ad00ad;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.button-row button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled state */
+.button-row button:disabled {
+    /* light gray */
+    background-color: #cfd8dc;
+    /* muted text */
+    color: #666;
+    /* shows it's inactive */
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    /* slightly faded */
+    opacity: 0.7;
+}
+
+.button-row span {
+    font-weight: 600;
+}
+
+#imageContainer {
+    width: 100%;
+    height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+/* Form container (optional, if you wrap everything) */
+form {
+    display: flex;
+    flex-direction: column;
+    /* spacing between fields */
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Each field-wrapper handles alignment */
+.field-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Input fields */
+.field-wrapper input[type="text"],
+.field-wrapper textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    font-size: 1rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.field-wrapper input[type="text"]:focus,
+.field-wrapper textarea:focus {
+    outline: none;
+    border-bottom: 1px solid #ff00ff;
+}
+
+/* Textarea sizing */
+.field-wrapper textarea {
+    min-height: 150px;
+    resize: none;
+}
+
+/* Add button aligned to right */
+.action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Button styling */
+.action-buttons button {
+    width: 100px;
+    border: 1px solid #ff00ff;
+    border-radius: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+.action-buttons button:hover {
+    border: 1px solid #ad00ad;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.action-buttons button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-buttons button[type="submit"] {
+    font-weight: bold;
+    background-color: #ff00ff;
+    color: white;
+}
+
+.action-buttons button[type="submit"]:hover {
+    background-color: #ad00ad;
+}
+
+#tagsContainer {
+    display: flex;
+    flex-direction: column;
+    /* spacing between tag rows */
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    font-family: 'Inter', sans-serif;
+}
+
+.tag-wrapper {
+    display: flex;
+    /* label left, checkbox right */
+    justify-content: space-between;
+    /* vertically center both */
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background-color: var(--tag-color);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tag-wrapper:hover {
+    /* subtle hover highlight */
+    background-color: color-mix(in srgb, var(--tag-color), white 35%);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.tag-wrapper label {
+    font-size: 1rem;
+    color: #333;
+}
+
+.tag-wrapper .info-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    background-image: url('info.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.tag-wrapper input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    /* modern browsers: gives checkbox a theme color */
+    accent-color: #ff00ff;
+}
+
+#flyout {
+    position: fixed;
+    width: auto;
+    max-width: 600px;
+}
+
+.bubble-wrapper {
+    /* Your original border properties, plus the necessary positioning */
+    border: solid #ff00ff 2px;
+    border-radius: 8px;
+    /* Slightly increased radius for a better look */
+    box-sizing: border-box;
+    padding: 3px;
+
+    /* Background and positioning for the cusp */
+    background-color: #ffffff;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* cusp */
+.bubble-wrapper::before {
+    content: '';
+    position: absolute;
+
+    /* Positioning: right side, vertically centered */
+    right: calc(0px - 12px);
+    top: 8px;
+
+    /* Triangle creation using borders */
+    width: 0;
+    height: 0;
+    border-style: solid;
+
+    /* Define the border shape (pointing right) */
+    /* Border-width: (Vertical size) (Right side: 0) (Vertical size) (Left side: width) */
+    border-width: 10px 0 10px 10px;
+
+    /* Set the border color to the bubble color */
+    border-color: transparent transparent transparent #ff00ff;
+}
+
+.bubble-wrapper::after {
+    content: '';
+    position: absolute;
+
+    /* Positioning: slightly inside the border triangle */
+    right: -9px;
+    top: 9px;
+
+    /* Triangle creation using borders */
+    width: 0;
+    height: 0;
+    border-style: solid;
+
+    /* Define the border shape (pointing right) */
+    /* Note: The size is slightly smaller than ::before to leave room for the border */
+    border-width: 9px 0 9px 10px;
+
+    /* Set the color to the bubble background color */
+    border-color: transparent transparent transparent #ffffff;
+}
+
+.sample-images {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
+    width: 582px;
+    height: 108px;
+}
+
+.sample-image {
+    width: 192px;
+    height: 108px;
+    flex-grow: 0;
+    flex-shrink: 9;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.tag-description {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Search bar */
+.search-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.search-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffd5ff;
+    border: 1px solid #ff00ff;
+    border-radius: 3px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.search-tag span {
+    margin-left: 0.4rem;
+    cursor: pointer;
+    color: #888;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.search-tag span:hover {
+    color: #ff00ff;
+}
+
+.search-bar input {
+    flex: 1;
+    border: none;
+    min-width: 100px;
+    font-size: 1rem;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.search-bar input:focus {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+/* Popover styling */
+#tagSuggestions {
+    position: fixed;
+    z-index: 1;
+    /* hidden by default */
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0.3rem 0;
+    min-width: 200px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 0px;
+    font-family: 'Inter', sans-serif;
+}
+
+#tagSuggestions div {
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#tagSuggestions div:hover {
+    background-color: #f0f8ff;
+}
+
+.filter-bar {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.4rem 2rem 0.4rem 0.4rem;
+}
+
+.filter-bar input {
+    width: 100%;
+    border: none;
+    min-width: 100px;
+    font-size: 1rem;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.filter-bar input:focus {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+.filter-bar button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #999;
+    transition: color 0.2s ease;
+    padding: 0;
+}
+
+.filter-bar button:hover {
+    color: #ff00ff;
+}

@@ -1,0 +1,185 @@
+html,
+body {
+    font-family: Inter, sans-serif;
+    background: #f9f9f9;
+    margin: 0;
+    padding: 0;
+}
+
+/* Sticky toolbar */
+.toolbar {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-bottom: 2px solid #ff00ff;
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.toolbar .button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
+.toolbar button {
+    background: #ff00ff;
+    color: white;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toolbar button:hover {
+    opacity: 0.8;
+}
+
+.toolbar button:disabled {
+    background: #ccc;
+    cursor: default;
+}
+
+#tagsContainer {
+    padding: 10px;
+}
+
+.wrapper {
+    border: solid #ff00ff 2px;
+    border-radius: 3px;
+    box-sizing: border-box;
+    padding: 3px;
+    margin-bottom: 8px;
+    background: white;
+    display: grid;
+    grid-template-columns: auto 200px 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.tag-checkbox {
+    align-self: center;
+    /* Vertically centers in the grid cell */
+    justify-self: center;
+    /* Horizontally centers if needed */
+    margin: 0 6px 0 4px;
+    /* Balanced horizontal spacing */
+    transform: scale(1.2);
+    /* Keep the larger look */
+    vertical-align: middle;
+    /* Align baseline with text */
+    cursor: pointer;
+}
+
+.tag-name,
+.tag-description {
+    padding: 4px;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.tag-name:hover,
+.tag-description:hover {
+    background: #f0f0ff;
+}
+
+.tag-name {
+    position: relative;
+    display: inline-block;
+    padding-left: 2.2em;
+    /* space for badge */
+}
+
+/* Create the usage counter badge */
+.tag-name::before {
+    content: attr(data-used);
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ff00ff;
+    color: white;
+    font-size: 0.75em;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 1.8em;
+    height: 1.8em;
+    line-height: 1.8em;
+    text-align: center;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+input.editable,
+textarea.editable {
+    width: 100%;
+    font-family: inherit;
+    font-size: inherit;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 4px;
+    resize: vertical;
+}
+
+.tag-images {
+    display: flex;
+    gap: 5px;
+    flex-direction: row;
+    width: 586px;
+}
+
+.tag-images div {
+    width: 192px;
+    height: 108px;
+    flex-grow: 0;
+    flex-shrink: 9;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+[popover] {
+    border: 2px solid #ff00ff;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    padding: 16px;
+    font-family: Inter, sans-serif;
+    width: 300px;
+}
+
+/* Optional smooth appearance */
+@starting-style {
+    [popover]:popover-open {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+[popover]:popover-open {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.15s ease;
+}
+
+[popover] button {
+    border: none;
+    /* rounded corners */
+    border-radius: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* smooth hover effect */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100px;
+}
