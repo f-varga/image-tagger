@@ -5,7 +5,12 @@
         <title>Tag Management</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app:version" content="{{ VERSION }}">
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+        <link rel="stylesheet" 
+              href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+              crossorigin="anonymous"
+              referrerpolicy="no-referrer" />
         <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon" />
         <link rel="stylesheet" href="{{ url_for('static', filename='manage.css') }}">
         <script src="{{ url_for('static', filename='manage.js') }}"></script>
@@ -30,7 +35,7 @@
         <div class="toolbar">
             <div><strong>Tag Management</strong></div>
             <div class="button-row">
-                <button id="deleteBtn" type="button" disabled>&#x26A0; Delete Selected</button>
+                <button id="deleteBtn" type="button" disabled><i class="fa-solid fa-triangle-exclamation"></i> Delete Selected</button>
                 <button id="deduplBtn" type="button" disabled>De-duplicate Selected</button>
             </div>
         </div>

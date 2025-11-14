@@ -249,14 +249,7 @@ form {
 }
 
 .tag-wrapper .info-icon {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
     margin-right: 5px;
-    background-image: url('info.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
 }
 
 .tag-wrapper input[type="checkbox"] {

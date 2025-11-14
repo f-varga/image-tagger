@@ -272,6 +272,8 @@ async function loadTags() {
         label.setAttribute("for", `tag_${t.id}`);
         const info = document.createElement('i');
         info.classList.add('info-icon');
+        info.classList.add('fa-solid');
+        info.classList.add('fa-circle-info');
         label.appendChild(info);
         label.appendChild(document.createTextNode(t.name));
         div.appendChild(label);
