@@ -53,7 +53,7 @@ app.cli.add_command(init_db_command)
 def _error_image(status, message):
     img_w, img_h = 1920, 1080
     img = Image.new('RGB', (img_w, img_h), color='rgb(198, 198, 198)')
-    font = ImageFont.truetype("RobotoMono-Regular.ttf", size=72.0)
+    font = ImageFont.truetype(os.path.join("resources", "RobotoMono-Regular.ttf"), size=72.0)
     text = '\n'.join([f"HTTP ERROR {status}"] + textwrap.wrap(message, 80))
     draw = ImageDraw.Draw(img)
     _, _, w, h = draw.textbbox((0, 0), text, font=font, align='center')
