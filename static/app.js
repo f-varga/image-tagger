@@ -383,7 +383,7 @@ async function initPager() {
 
 function initSearch() {
 
-    const searchInput = document.getElementById("searchInput");
+    const input = document.getElementById("searchInput");
     const suggestions = document.getElementById("tagSuggestions");
     const searchBar = document.querySelector(".search-bar");
     const next = document.getElementById('pagerNext'),
@@ -393,10 +393,132 @@ function initSearch() {
         jump = document.getElementById('pagerJump'),
         all = document.getElementById('pagerAll');
 
-    searchInput.addEventListener("input", () => {
-        const query = searchInput.value.trim().toLowerCase();
+    input.addEventListener("keydown", e => {
+
+        if (e.key === "ArrowUp") {
+            e.preventDefault();
+            let found = null, hov = null;
+            for (const el of Array.from(suggestions.querySelectorAll('div')).toReversed().values()) {
+                if (el.matches('.highlight')) {
+                    found = el;
+                } else if (found && found.matches('.highlight')) {
+                    found.classList.toggle('highlight');
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                    break;
+                }
+            }
+            for (const el of Array.from(suggestions.querySelectorAll('div')).toReversed().values()) {
+                if (el.matches(':hover')) {
+                    hov = el;
+                } else if (!found && hov) {
+                    found = hov;
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                    break;
+                }
+            }
+            if (!found) {
+                const el = suggestions.querySelector('div:last-child');
+                if (el) {
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                }
+            }
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            let found = null, hov = null;
+            for (const el of suggestions.querySelectorAll('div')) {
+                if (el.matches('.highlight')) {
+                    found = el;
+                } else if (found && found.matches('.highlight')) {
+                    found.classList.toggle('highlight');
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                    break;
+                }
+            }
+            for (const el of suggestions.querySelectorAll('div')) {
+                if (el.matches(':hover')) {
+                    hov = el;
+                } else if (!found && hov) {
+                    found = hov;
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                    break;
+                }
+            }
+            if (!found) {
+                const el = suggestions.querySelector('div:first-child');
+                if (el) {
+                    el.classList.toggle('highlight');
+                    if (!input.dataset["history"]) {
+                        input.dataset["history"] = input.value;
+                    }
+                    input.value = el.textContent;
+                    input.selectionStart = input.value.length;
+                }
+            }
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            const suggestion = suggestions.querySelector('div.highlight');
+            if (suggestion && suggestion.textContent == input.value) {
+                addTagToBar(suggestion.dataset["tagId"], suggestion.textContent);
+                if (input.dataset["history"]) {
+                    delete input.dataset["history"];
+                }
+                input.value = '';
+                suggestions.hidePopover();
+                suggestions.replaceChildren();
+            }
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            for (const el of suggestions.querySelectorAll('.highlight')) {
+                el.classList.toggle('highlight');
+            }
+            if (input.dataset["history"]) {
+                input.value = input.dataset["history"];
+                delete input.dataset["history"];
+            } else {
+                input.value = '';
+                suggestions.hidePopover();
+                suggestions.replaceChildren();
+            }
+        } else if (e.key === "Backspace") {
+            if (input.selectionStart === 0 && input.selectionEnd == 0) {
+                const st = searchBar.querySelector(".search-tag:last-of-type");
+                if (st) {
+                    st.remove();
+                    search();
+                }
+            }
+        } // else handle the event normally
+    });
+
+    input.addEventListener("input", () => {
+        const query = input.value.trim().toLowerCase();
         
-        if (!query) {
+        if (!query || query.length < 3) {
             suggestions.hidePopover();
             return;
         }
@@ -408,9 +530,14 @@ function initSearch() {
         }
 
         const fragment = document.createDocumentFragment();
+        let highlighted = false;
         for (const t of matches) {
             const div = document.createElement("div");
             div.textContent = t.name;
+            if (t.name === query && !highlighted) {
+                div.className = "highlight";
+                highlighted = true;
+            }
             div.dataset["tagId"] = t.id;
             fragment.appendChild(div);
         }
@@ -424,12 +551,29 @@ function initSearch() {
         suggestions.style.width = `${rect.width}px`;
     });
 
-    suggestions.addEventListener("click", e => {
-        if (e.target.dataset["tagId"]) {
-            addTagToBar(e.target.dataset["tagId"], e.target.textContent);
-            searchInput.value = "";
-            suggestions.hidePopover();
+    suggestions.addEventListener("mouseover", e => {
+        if (!e.target.dataset["tagId"]) {
+            return;
         }
+        const highlight = suggestions.querySelector('.highlight');
+        if (highlight && highlight != e.target) {
+            e.preventDefault();
+            highlight.classList.toggle('highlight');
+            e.target.classList.toggle('highlight');
+            input.value = e.target.textContent;
+        }
+    });
+
+    suggestions.addEventListener("click", e => {
+        if (!e.target.dataset["tagId"]) {
+            return;
+        }
+        addTagToBar(e.target.dataset["tagId"], e.target.textContent);
+        if (input.dataset["history"]) {
+            delete input.dataset["history"];
+        }
+        input.value = "";
+        suggestions.hidePopover();
     });
 
     function addTagToBar(id, name) {
@@ -441,7 +585,7 @@ function initSearch() {
         tag.className = "search-tag";
         tag.dataset["tagId"] = id;
         tag.innerHTML = `${name}<span>&#x00D7;</span>`;
-        searchBar.insertBefore(tag, searchInput);
+        searchBar.insertBefore(tag, input);
 
         search();
     }
