@@ -71,14 +71,16 @@ A lightweight, hobby project built with **Flask** for demonstrating skills in we
 5.  **Run the Application:**
     ```bash
     source venv/bin/activate
-    flask run --app web # --debug if you want to tinker with the code
+    flask --app web init-db # only before first run (or whenever you want to completely reset your database)
+    flask --app web run     # --debug if you want to tinker with the code and see the effects immediatly
     ```
 
     or, under Windows:
 
     ```powershell
     .\venv\Scripts\activate
-    flask run --app web # --debug if you want to tinker with the code
+    flask --app web init-db # only before first run (or whenever you want to completely reset your database)
+    flask --app web run     # --debug if you want to tinker with the code and see the effects immediatly
     ```
 
     The application should now be accessible at `http://127.0.0.1:5000`. If your firewall rules prevent the application from running at this port
