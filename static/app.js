@@ -295,11 +295,13 @@ async function loadImageTags() {
     const index = parseInt(document.getElementById("pagerCrt").textContent) - 1;
     const fn = images[index];
 
-    document.getElementById("tagsContainer").scroll({ top: 0, behavior: "smooth" });
-
     const resp = await fetch(config.urls.imageTags.concat("?fn=", encodeURIComponent(fn)));
 
     const imageTags = await resp.json();
+
+    if (imageTags.length === 0) {
+        document.getElementById("tagsContainer").scroll({ top: 0, behavior: "smooth" });
+    }
 
     for (const input of document.querySelectorAll("#tagsContainer input")) {
 
@@ -662,6 +664,33 @@ function initFilterTags() {
     const container = document.getElementById('tagsContainer');
 
     const toggleClr = () => { clr.style.display = input.value ? 'block' : 'none'; };
+
+    const centermostTag = () => {
+
+        const containerRect = container.getBoundingClientRect();
+        const centerY = containerRect.top + containerRect.height / 2;
+        const hasChecked = [...container.querySelectorAll('input:checked')].some(c => c.closest('.tag-wrapper').offsetParent != null);
+        let best = null;
+        let bestDist = Infinity;
+
+        for (const tag of [...container.querySelectorAll('.tag-wrapper')].filter(t => t.offsetParent != null)) {
+
+            if (hasChecked && !tag.querySelector('input:checked')) {
+                continue;
+            }
+
+            const r = tag.getBoundingClientRect();
+            const tagCenter = r.top + r.height / 2;
+            const dist = Math.abs(tagCenter - centerY);
+
+            if (dist < bestDist) {
+                best = tag;
+                bestDist = dist;
+            }
+        }
+
+        return best;
+    };
     const applyFlt = () => {
 
         const newVal = input.value.length > 2 ? input.value : null;
@@ -672,10 +701,25 @@ function initFilterTags() {
             return;
         }
 
+        const tagToKeepInView = centermostTag();
+        const tr = tagToKeepInView.getBoundingClientRect();
+        const cr = container.getBoundingClientRect();
+        const oldTop = tr.top - cr.top;
+
         const flt = tags.filter(t => tagFilter.name === null || t.name.search(tagFilter.name) >= 0).map(t => t.id);
         for (const el of container.querySelectorAll('.tag-wrapper')) {
             const tagId = parseInt(el.dataset["tagId"]);
             el.style.display = flt.indexOf(tagId) < 0 ? 'none' : '';
+        }
+
+        if (newVal === null) {
+            requestAnimationFrame(() => {
+                const tr = tagToKeepInView.getBoundingClientRect();
+                const cr = container.getBoundingClientRect();
+                const newTop = tr.top - cr.top;
+
+                container.scrollBy({ top: newTop - oldTop, behavior: "instant" });
+            });
         }
     };
 

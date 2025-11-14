@@ -12,7 +12,7 @@ from PIL import Image
 import click
 from flask import Flask, abort, current_app, g, render_template, request, send_file
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 app = Flask("Image Tagger")
 
