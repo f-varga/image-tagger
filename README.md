@@ -1,6 +1,6 @@
 # 📸 Simple Flask Image Tagger
 
-A lightweight, hobby project built with **Flask** for demonstrating skills in web development, database management, and UI design (mainly for myself since I don't really expect anyone to look at this app -- and yes, this file was written by an LLM). This application provides an easy way to organize and search your local image collection using customizable tags.
+A lightweight, hobby project built with **Flask** for demonstrating skills in web development, database management, and UI design (mainly for myself since I don't really expect anyone to look at this app -- and yes, this file was mostly written by an LLM). This application provides an easy way to organize and search your local image collection using customizable tags.
 
 ---
 
@@ -66,26 +66,39 @@ A lightweight, hobby project built with **Flask** for demonstrating skills in we
     }
     ```
 
-    * The `DATABASE` and `IMAGES_FOLDER` keys are specific to the application. For the other options, please consult the [flask documentation](https://flask.palletsprojects.com/en/stable/).
+    * The `DATABASE` and `IMAGES_FOLDER` keys are specific to the application:
+        * `DATABASE` controls the name of your local database file. If you change this value, rename the `tags.db3` file in the root of the project to the new name or run: `flask --app web init-db` again.
+        * `IMAGES_FOLDER` contains the path to a local folder where you store the images you want to tag. This should be a valid path and remember: the application will only look inside this folder and not any of it's subfolders.
+    
+    * For the other options, please consult the [flask documentation](https://flask.palletsprojects.com/en/stable/).
 
 5.  **Run the Application:**
     ```bash
     source venv/bin/activate
-    flask --app web init-db # only before first run (or whenever you want to completely reset your database)
-    flask --app web run     # --debug if you want to tinker with the code and see the effects immediatly
+    flask --app web init-db # only before first run (or whenever 
+                            # you want to completely reset your database)
+    flask --app web run     # --debug if you want to tinker with the
+                            # code and see the effects immediatly
     ```
 
     or, under Windows:
 
     ```powershell
     .\venv\Scripts\activate
-    flask --app web init-db # only before first run (or whenever you want to completely reset your database)
-    flask --app web run     # --debug if you want to tinker with the code and see the effects immediatly
+    flask --app web init-db # only before first run (or whenever 
+                            # you want to completely reset your database)
+    flask --app web run     # --debug if you want to tinker with the
+                            # code and see the effects immediatly
     ```
 
-    The application should now be accessible at `http://127.0.0.1:5000`. If your firewall rules prevent the application from running at this port
+    The application should now be accessible at `http://127.0.0.1:5000`. If your OS access control or firewall rules prevent the application from running at this port, please consult the documentation provided by your OS vendor / firewall vendor on how to solve this issue or try:
+
+    ```bash
+    flask --app web run --port YOUR_PORT_HERE
+    ```
 
 6. **Deploying the Application**
+
     At your own risk, you can deploy the application on a webserver that you own. For instructions on how to deploy flask applications in production environments, consult the [flask documentation](https://flask.palletsprojects.com/en/stable/).
 
     **Do not** use the above command to deploy the application in a production environment!
