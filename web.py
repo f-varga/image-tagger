@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.3"
+VERSION = "1.0.5"
 
 app = Flask("Image Tagger")
 
@@ -405,7 +405,7 @@ def toggle_tags():
 
         db.commit()
 
-        return list(current_tags ^ tags_to_toggle), 200
+        return list(current_tags ^ set(tags_to_toggle)), 200
 
     except sqlite3.IntegrityError:
         db.rollback()
