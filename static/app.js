@@ -13,6 +13,21 @@ const tagFilter = {
     "name": null
 };
 
+function alertDialog(message) {
+
+    const alertBox = document.getElementById('alertBox');
+    const ackBtn = document.getElementById('ackBtn');
+
+    document.getElementById('alertMessage').textContent = message;
+
+    alertBox.showPopover();
+
+    return new Promise(resolve => {
+
+        ackBtn.addEventListener('click', () => (resolve(true), alertBox.hidePopover()), { once: true });
+    });
+}
+
 function initAddTag() {
 
     const form = document.getElementById("addTag");
@@ -36,6 +51,17 @@ function initAddTag() {
         formData.append('description', description);
 
         const resp = await fetch(config.urls.addTag, { method: 'POST', body: formData });
+
+        if (!resp.ok) {
+            if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                const info = await resp.json();
+                alertDialog(info.reason);
+            } else {
+                alertDialog(GENERIC_COMMUNICATION_ERROR)
+            }
+            return;
+        }
+
         const tag = await resp.json();
 
         nameInput.value = '';
@@ -43,15 +69,30 @@ function initAddTag() {
 
         const index = parseInt(document.getElementById("pagerCrt").textContent) - 1;
         const fn = images[index];
+        const tagId = tag.id;
 
+        toggleAddedTag(formData, fn, tagId);
+    });
+
+    async function toggleAddedTag(formData, fn, tagId) {
         formData = new FormData();
         formData.append("fn", fn);
-        formData.append("tags", JSON.stringify([tag.id]));
+        formData.append("tags", JSON.stringify([tagId]));
 
-        await fetch(config.urls.toggleTags, { method: 'POST', body: formData });
+        const resp = await fetch(config.urls.toggleTags, { method: 'POST', body: formData });
+
+        if (!resp.ok) {
+            if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                const info = await resp.json();
+                alertDialog(info.reason);
+            } else {
+                alertDialog(GENERIC_COMMUNICATION_ERROR)
+            }
+            return;
+        }
 
         loadTags();
-    });
+    }
 }
 
 async function initTags() {
@@ -118,7 +159,7 @@ async function initTags() {
             clearTimeout(top);
         }
 
-        top = setTimeout(() => {
+        top = setTimeout(async () => {
 
             let p = pending;
             pending = {};
@@ -130,9 +171,18 @@ async function initTags() {
                 formData.append("fn", fn);
                 formData.append("tags", JSON.stringify(p[fn]));
 
-                fetch(config.urls.toggleTags, { method: 'POST', body: formData });
+                const resp = await fetch(config.urls.toggleTags, { method: 'POST', body: formData });
+
+                if (!resp.ok) {
+                    if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                        const info = await resp.json();
+                        alertDialog(info.reason);
+                    } else {
+                        alertDialog(GENERIC_COMMUNICATION_ERROR)
+                    }
+                }
             }
-        }, 1e4);
+        }, 5e3);
     });
 
     let hoverId = null, tof = null;
@@ -149,9 +199,17 @@ async function initTags() {
             hoverId = hid;
         }
         const resp = await fetch(config.urls.tagInfo.concat("?tag=", encodeURIComponent(hoverId)));
+
         if (!resp.ok) {
+            if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                const info = await resp.json();
+                alertDialog(info.reason);
+            } else {
+                alertDialog(GENERIC_COMMUNICATION_ERROR)
+            }
             return;
         }
+
         const info = await resp.json();
         let flyout = document.getElementById('flyout');
 
@@ -246,6 +304,16 @@ async function loadTags() {
 
     const resp = await fetch(config.urls.tags);
 
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
+        }
+        return;
+    }
+
     tags.length = 0;
     tags.push(...await resp.json());
     tags.sort((a, b) => {
@@ -297,6 +365,16 @@ async function loadImageTags() {
 
     const resp = await fetch(config.urls.imageTags.concat("?fn=", encodeURIComponent(fn)));
 
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR);
+        }
+        return;
+    }
+
     const imageTags = await resp.json();
 
     if (imageTags.length === 0) {
@@ -312,6 +390,16 @@ async function loadImageTags() {
 async function initImageViewer() {
 
     const resp = await fetch(config.urls.images);
+
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
+        }
+        return;
+    }
 
     images.length = 0;
     images.push(...await resp.json());
@@ -335,6 +423,17 @@ async function initPager() {
         jump = document.getElementById('pagerJump');
 
     const resp = await fetch(config.urls.latest);
+
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
+        }
+        return;
+    }
+
     const latest = await resp.json();
     if (latest.fn === null) {
         jump.disabled = true;
@@ -612,6 +711,16 @@ function initSearch() {
 
             const resp = await fetch(config.urls.searchImages, { method: 'POST', body: formData });
 
+            if (!resp.ok) {
+                if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                    const info = await resp.json();
+                    alertDialog(info.reason);
+                } else {
+                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                }
+                return;
+            }
+
             images.length = 0;
             images.push(...await resp.json());
 
@@ -619,6 +728,16 @@ function initSearch() {
         } else {
 
             const resp = await fetch(config.urls.images);
+
+            if (!resp.ok) {
+                if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                    const info = await resp.json();
+                    alertDialog(info.reason);
+                } else {
+                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                }
+                return;
+            }
 
             images.length = 0;
             images.push(...await resp.json());

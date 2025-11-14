@@ -28,6 +28,8 @@
                     searchImages: "{{ url_for('search_images') }}"
                 }
             };
+
+            const GENERIC_COMMUNICATION_ERROR = 'An unexpected error occurred while communicating with the server.';
         </script>
     </head>
     <body>
@@ -96,5 +98,12 @@
         <script type="text/javascript">
             document.getElementById('btnManage').addEventListener('click', () => open("{{ url_for('tag_management') }}"))
         </script>
+
+        <div id="alertBox" popover>
+            <p id="alertMessage">All your base are belong to us.</p>
+            <div>
+                <button id="ackBtn" type="button">OK</button>
+            </div>
+        </div>
     </body>
 </html>

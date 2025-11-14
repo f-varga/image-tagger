@@ -29,6 +29,8 @@
                     type: "conjunction",
                 })
             };
+
+            const GENERIC_COMMUNICATION_ERROR = 'An unexpected error occurred while communicating with the server.';
         </script>
     </head>
     <body>
@@ -43,7 +45,7 @@
         <div id="tagsContainer"></div>
 
         <div id="confirmBox" popover>
-            <p id="confirmMessage">Are you sure you want to delete this tag?</p>
+            <p id="confirmMessage">You sure about that?</p>
             <div style="display:flex; justify-content:end; gap:8px;">
                 <button id="cancelBtn" type="button">Cancel</button>
                 <button id="okBtn" type="button" style="background:#ff00ff; color:white;">OK</button>
@@ -51,8 +53,10 @@
         </div>
 
         <div id="alertBox" popover>
-            <p id="alertMessage">All your bases are belong to us.</p>
-            <button id="ackBtn" type="button" style="background: #ff00ff; color: white;"></button>
+            <p id="alertMessage">All your base are belong to us.</p>
+            <div style="display: flex; justify-content: center; align-items: center;">
+                <button id="ackBtn" type="button" style="background: #ff00ff; color: white;">OK</button>
+            </div>
         </div>
     </body>
 </html>

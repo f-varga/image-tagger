@@ -34,7 +34,16 @@ window.onload = () => {
                 formData.append('tag_id', tagId);
                 formData.append(field, newValue);
 
-                await fetch(config.urls.updateTag, { method: 'POST', body: formData });
+                const resp = await fetch(config.urls.updateTag, { method: 'POST', body: formData });
+
+                if (!resp.ok) {
+                    if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                        const info = await resp.json();
+                        alertDialog(info.reason);
+                    } else {
+                        alertDialog(GENERIC_COMMUNICATION_ERROR)
+                    }
+                }
             }
         };
 
@@ -101,16 +110,16 @@ window.onload = () => {
 
         selected.length = 0;
 
-        const res = await fetch(config.urls.deDuplicate, { method: 'POST', body: formData });
+        const resp = await fetch(config.urls.deDuplicate, { method: 'POST', body: formData });
 
-        if (res.ok) {
-
+        if (resp.ok) {
             await alertDialog('Tags successfully de-duplicated.');
-
             fetchTags();
+        } else if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
         } else {
-
-            await alertDialog('Deduplication failed.');
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
         }
     });
 
@@ -135,16 +144,16 @@ window.onload = () => {
 
         selected.length = 0;
 
-        const res = await fetch(config.urls.deleteTags, { method: 'POST', body: formData });
+        const resp = await fetch(config.urls.deleteTags, { method: 'POST', body: formData });
 
-        if (res.ok) {
-
+        if (resp.ok) {
             await alertDialog(`${tagNames.length} tags were successfully deleted.`);
-
             fetchTags();
+        }  else if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
         } else {
-
-            await alertDialog('Failed to delete tags.');
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
         }
     });
 
@@ -188,8 +197,19 @@ function alertDialog(message) {
 async function fetchTags() {
 
     const container = document.getElementById('tagsContainer');
-    const res = await fetch(config.urls.tags);
-    const tags = await res.json();
+    const resp = await fetch(config.urls.tags);
+
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
+        }
+        return;
+    }
+
+    const tags = await resp.json();
     tags.sort((a, b) => {
         if (b.used !== a.used) {
             return b.used - a.used;
@@ -198,7 +218,19 @@ async function fetchTags() {
     });
 
     const loadInfo = async (tagId, descDiv, imgDiv) => {
-        const info = await fetch(`${config.urls.tagInfo}?tag=${tagId}`).then(r => r.json());
+        const resp = await fetch(`${config.urls.tagInfo}?tag=${tagId}`);
+
+        if (!resp.ok) {
+            if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                const info = await resp.json();
+                alertDialog(info.reason);
+            } else {
+                alertDialog(GENERIC_COMMUNICATION_ERROR)
+            }
+            return;
+        }
+
+        const info = await resp.json();
         descDiv.replaceChildren(...info.description.split('\r\n').flatMap(ln => [
             document.createElement('br'),
             document.createTextNode(ln)
