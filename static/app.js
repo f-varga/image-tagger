@@ -180,7 +180,15 @@ async function initTags() {
                     } else {
                         alertDialog(GENERIC_COMMUNICATION_ERROR)
                     }
+                    continue;
                 }
+
+                document.dispatchEvent(new CustomEvent("tagsUpdated", {
+                    detail: {
+                        "fn": fn,
+                        "tags": await resp.json()
+                    }
+                }));
             }
         }, 5e3);
     });
@@ -693,6 +701,46 @@ function initSearch() {
         search();
     }
 
+    document.addEventListener("tagsUpdated", e => {
+        const { fn, tags } = e.detail;
+
+        const index = images.indexOf(fn);
+        if (index < 0) {
+            return;
+        }
+
+        const searchTags = Array.from(
+            searchBar.querySelectorAll('.search-tag')
+        ).map(
+            el => parseInt(el.dataset["tagId"])
+        );
+
+        if (searchTags.some(t => tags.indexOf(t) < 0)) {
+
+            images.splice(index, 1);
+
+            const crtIndex = parseInt(crt.textContent) - 1;
+            let newIndex = crtIndex;
+
+            if (index < crtIndex) {
+                newIndex = crtIndex - 1;
+                previous.disabled = (newIndex - 1) < 0;
+            }
+
+            if (newIndex >= images.length) {
+                newIndex -= 1;
+            }
+
+            if (index === crtIndex) {
+                imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[newIndex]), '")');
+            }
+
+            crt.textContent = (newIndex + 1).toFixed(0);
+            all.textContent = images.length.toFixed(0);
+            next.disabled = (newIndex + 1) >= images.length;
+        }
+    });
+
     async function search() {
 
         const index = parseInt(crt.textContent) - 1;
@@ -741,6 +789,8 @@ function initSearch() {
 
             images.length = 0;
             images.push(...await resp.json());
+
+            jump.disabled = !jump.dataset["latest"] || images[0] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
         }
 
         const newIndex = images.indexOf(fn);

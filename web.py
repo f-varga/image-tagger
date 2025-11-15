@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 
 app = Flask("Image Tagger")
 
