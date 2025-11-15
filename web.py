@@ -2,6 +2,7 @@
 Image Tagger flask application.
 """
 
+from collections import defaultdict
 from io import BytesIO
 import json
 import os
@@ -13,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 app = Flask("Image Tagger")
 
@@ -163,13 +164,24 @@ def search_images():
 
         c.execute(
             f"""
-            SELECT fn FROM images WHERE image_id IN (
-                SELECT image_id FROM tagged_images
-                WHERE tag_id IN ({','.join('?' * len(tags_list))})
-            );
+            SELECT tag_id, image_id FROM tagged_images
+            WHERE tag_id IN ({','.join('?' * len(tags_list))});
             """,
             tags_list
         )
+
+        d = defaultdict(set)
+        for tag_id, image_id in c:
+            d[tag_id].add(image_id)
+        found_images = list(set.intersection(*d.values()))
+        c.execute(
+            f"""
+            SELECT fn FROM images
+            WHERE image_id IN ({','.join('?' * len(found_images))});
+            """,
+            found_images
+        )
+
         found_images = [fn for fn, *_ in c]
 
         return found_images, 200
