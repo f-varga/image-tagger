@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 app = Flask("Image Tagger")
 
@@ -452,11 +452,13 @@ def tag_info():
         db = _get_db()
         c = db.cursor()
 
-        c.execute("SELECT description FROM tags WHERE tag_id = ?;",
+        c.execute("SELECT description, used FROM tags WHERE tag_id = ?;",
                   (t,))
+        desc, used = c.fetchone()
 
         r = {
-            "description": next((d for d, *_ in c), ""),
+            "description": desc,
+            "used": used,
             "images": [],
         }
 

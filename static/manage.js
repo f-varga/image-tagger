@@ -122,16 +122,56 @@ window.onload = () => {
 
         selected.length = 0;
 
+        const updateKept = async (tagId) => {
+            const resp = await fetch(`${config.urls.tagInfo}?tag=${tagId}`);
+
+            if (!resp.ok) {
+                if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                    const info = await resp.json();
+                    alertDialog(info.reason);
+                } else {
+                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                }
+                return;
+            }
+
+            const info = await resp.json();
+            const kept = container.querySelector(`div[data-tag-id="${tagId}"]`);
+            kept.querySelector(".tag-name").dataset["used"] = info.used.toFixed(0);
+            kept.querySelector(".tag-description").replaceChildren(...info.description.split('\r\n').flatMap(ln => [
+                document.createElement('br'),
+                document.createTextNode(ln)
+            ]).splice(1));
+            kept.querySelector(".tagImages").replaceChildren(...info.images.map(fn => {
+                const img = document.createElement('div');
+                img.style.backgroundImage = `url("${config.urls.loadImage}?fn=${encodeURIComponent(fn)}&tn=true")`;
+                return img;
+            }));
+        };
+
         const resp = await fetch(config.urls.deDuplicate, { method: 'POST', body: formData });
 
         if (resp.ok) {
             await alertDialog('Tags successfully de-duplicated.');
-            fetchTags();
+            
+            const details = await resp.json();
+            if (details.status !== "success") {
+                return;
+            }
+
+            updateKept(details.kept);
+
+            for (const tagId of details.removed) {
+                const el = container.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (el) {
+                    el.remove();
+                }
+            }
 
             if (window.opener) {
                 window.opener.postMessage({
                     "type": "tagsMerged",
-                    "details": await resp.json()
+                    "details": details
                 }, location.origin);
             }
         } else if (resp.headers.get("Content-Type").startsWith("application/json")) {
@@ -167,12 +207,23 @@ window.onload = () => {
 
         if (resp.ok) {
             await alertDialog(`${tagNames.length} tags were successfully deleted.`);
-            fetchTags();
+            
+            const details = await resp.json();
+            if (details.status !== "success") {
+                return;
+            }
+
+            for (const tagId of details.removed) {
+                const el = container.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (el) {
+                    el.remove();
+                }
+            }
 
             if (window.opener) {
                 window.opener.postMessage({
                     "type": "tagsRemoved",
-                    "details": await resp.json()
+                    "details": details
                 }, location.origin);
             }
         }  else if (resp.headers.get("Content-Type").startsWith("application/json")) {
@@ -268,9 +319,8 @@ async function fetchTags() {
             imgDiv.appendChild(img);
         }
     };
-    
-    const fragment = document.createDocumentFragment();
-    for (const tag of tags) {
+
+    const fragment = await tags.map(async (tag) => {
 
         const row = document.createElement('div');
         row.className = 'wrapper tag-row';
@@ -291,11 +341,19 @@ async function fetchTags() {
         const imgDiv = document.createElement('div');
         imgDiv.className = 'tag-images';
 
-        loadInfo(tag.id, descDiv, imgDiv);
+        await loadInfo(tag.id, descDiv, imgDiv);
 
         row.append(checkbox, nameDiv, descDiv, imgDiv);
-        fragment.appendChild(row);
-    }
+
+        return row;
+    }).reduce(async (fragmentPromise, rowPromise) => {
+
+        const frag = await fragmentPromise;
+
+        frag.appendChild(await rowPromise);
+
+        return frag;
+    }, Promise.resolve(document.createDocumentFragment()));
 
     container.replaceChildren(fragment);
 }
