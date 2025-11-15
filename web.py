@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.9"
+VERSION = "1.0.10"
 
 app = Flask("Image Tagger")
 
@@ -219,7 +219,7 @@ def load_image():
 
             # If tn=true, make a thumbnail
             if make_thumbnail:
-                img.thumbnail((192, 108))
+                img.thumbnail((192, 108), Image.Resampling.LANCZOS)
 
             # Write image to memory buffer as JPEG
             img_io = BytesIO()
