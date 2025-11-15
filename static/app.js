@@ -839,13 +839,14 @@ function initSearch() {
                 newIndex -= 1;
             }
 
-            if (index === crtIndex) {
-                imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[newIndex]), '")');
-            }
-
             crt.textContent = (newIndex + 1).toFixed(0);
             all.textContent = images.length.toFixed(0);
             next.disabled = (newIndex + 1) >= images.length;
+
+            if (index === crtIndex) {
+                imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[newIndex]), '")');
+                loadImageTags();
+            }
         }
     });
 
