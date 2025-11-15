@@ -33,6 +33,7 @@ function initAddTag() {
     const form = document.getElementById("addTag");
     const nameInput = document.getElementById("tagName");
     const descriptionInput = document.getElementById("tagDescription");
+    const container = document.getElementById("tagsContainer");
 
     form.addEventListener("submit", async (e) => {
 
@@ -69,15 +70,14 @@ function initAddTag() {
 
         const index = parseInt(document.getElementById("pagerCrt").textContent) - 1;
         const fn = images[index];
-        const tagId = tag.id;
 
-        toggleAddedTag(formData, fn, tagId);
+        toggleAddedTag(formData, fn, tag);
     });
 
-    async function toggleAddedTag(formData, fn, tagId) {
+    async function toggleAddedTag(formData, fn, tag) {
         formData = new FormData();
         formData.append("fn", fn);
-        formData.append("tags", JSON.stringify([tagId]));
+        formData.append("tags", JSON.stringify([tag.id]));
 
         const resp = await fetch(config.urls.toggleTags, { method: 'POST', body: formData });
 
@@ -91,18 +91,155 @@ function initAddTag() {
             return;
         }
 
-        loadTags();
+        const toggled = (await resp.json()).some(t => t == tag.id);
+
+        if (!toggled) {
+            alertDialog("Failed to toggle the newly added tag");
+        }
+
+        tags.push(tag);
+        tags.sort((a, b) => {
+            if (b.used !== a.used) {
+                return b.used - a.used;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        requestAnimationFrame(() => {
+            const maxUsed = Math.max(...tags.map(t => t.used));
+            container.appendChild(buildContainerTag(tag, maxUsed, toggled));
+            const elementMap = new Map(
+                Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
+            );
+            tags.forEach(t => {
+                const el = elementMap.get(t.id);
+                const hue = 240 - (240 * (t.used / maxUsed));
+                if (el) {
+                    el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
+                    container.appendChild(el);
+                }
+            });
+        });
     }
 }
 
 async function initTags() {
 
-    await loadTags();
+    const resp = await fetch(config.urls.tags);
+
+    if (!resp.ok) {
+        if (resp.headers.get("Content-Type").startsWith("application/json")) {
+            const info = await resp.json();
+            alertDialog(info.reason);
+        } else {
+            alertDialog(GENERIC_COMMUNICATION_ERROR)
+        }
+        return;
+    }
+
+    tags.length = 0;
+    tags.push(...await resp.json());
+    tags.sort((a, b) => {
+        if (b.used !== a.used) {
+            return b.used - a.used;
+        }
+        return a.name.localeCompare(b.name);
+    });
+
+    const container = document.getElementById("tagsContainer");
+
+    const maxUsed = Math.max(...tags.map(t => t.used));
+    const fragment = document.createDocumentFragment();
+    for (const t of tags) {
+        const div = buildContainerTag(t, maxUsed);
+        fragment.appendChild(div);
+    }
+
+    container.replaceChildren(fragment);
+
+    const origin = location.origin;
+    window.addEventListener("message", e => {
+        if (e.origin != origin) {
+            return;
+        }
+
+        const { type, details } = e.data;
+        if (type === "tagsRemoved" && details.status === "success") {
+            for (const tagId of details.removed) {
+                const ix = tags.findIndex(t => t.id == tagId);
+                if (ix < 0) {
+                    continue;
+                }
+                tags.splice(ix, 1);
+                const el = container.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (el) {
+                    el.remove();
+                }
+            }
+        }
+
+        if (type === "tagsMerged" && details.status === "success") {
+            const kept = tags.find(t => t.id === details.kept);
+            if (!kept) {
+                return;
+            }
+            const removed = [];
+            for (const tagId of details.removed) {
+                const ix = tags.findIndex(t => t.id == tagId);
+                if (ix < 0) {
+                    continue;
+                }
+                removed.push(...tags.splice(ix, 1));
+                const el = container.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (el) {
+                    el.remove();
+                }
+            }
+            kept.used += removed.reduce((p, c) => p + c.used, 0);
+            tags.sort((a, b) => {
+                if (b.used !== a.used) {
+                    return b.used - a.used;
+                }
+                return a.name.localeCompare(b.name);
+            });
+            requestAnimationFrame(() => {
+                const elementMap = new Map(
+                    Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
+                );
+                const maxUsed = Math.max(...tags.map(t => t.used));
+                tags.forEach(tag => {
+                    const el = elementMap.get(tag.id);
+                    const hue = 240 - (240 * (t.used / maxUsed));
+                    if (el) {
+                        el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
+                        container.appendChild(el);
+                    }
+                });
+            });
+        }
+
+        if (type === "tagUpdated") {
+            const updated = tags.find(t => t.id === details.tagId);
+            if (!updated) {
+                return;
+            }
+            if (details.field !== "name") {
+                return;
+            }
+            updated.name = details.newValue;
+            const el = container.querySelector(`div[data-tag-id="${details.tagId}"] label`);
+            if (!el) {
+                return;
+            }
+            const infoIcon = el.firstChild;
+            el.replaceChildren(infoIcon, document.createTextNode(details.newValue));
+        }
+    });
+
+    loadImageTags();
 
     let top = null, tor = null;
     let pending = {};
-
-    const container = document.getElementById("tagsContainer");
 
     container.addEventListener("change", (e) => {
 
@@ -131,14 +268,14 @@ async function initTags() {
 
         setTimeout(() => {
             const elementMap = new Map(
-                Array.from(container.children).map(el => [el.dataset["tagId"], el])
+                Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
             );
             const maxUsed = Math.max(...tags.map(t => t.used));
             tags.forEach(tag => {
                 const el = elementMap.get(tag.id);
-                const hue = 240 - (240 * (t.used / maxUsed));
-                el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
+                const hue = 240 - (240 * (tag.used / maxUsed));
                 if (el) {
+                    el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
                     container.appendChild(el);
                 }
             });
@@ -308,62 +445,33 @@ async function initTags() {
     });
 }
 
-async function loadTags() {
+function buildContainerTag(tag, maxUsed, checked = false) {
 
-    const resp = await fetch(config.urls.tags);
-
-    if (!resp.ok) {
-        if (resp.headers.get("Content-Type").startsWith("application/json")) {
-            const info = await resp.json();
-            alertDialog(info.reason);
-        } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
-        }
-        return;
+    const hue = 240 - (240 * (tag.used / maxUsed));
+    const div = document.createElement('div');
+    div.classList.add('tag-wrapper');
+    div.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
+    div.dataset["tagId"] = tag.id.toFixed(0);
+    if (tagFilter.name) {
+        div.style.display = tag.name.search(tagFilter.name) < 0 ? 'none' : '';
     }
+    const label = document.createElement('label');
+    label.setAttribute("for", `tag_${tag.id}`);
+    const info = document.createElement('i');
+    info.classList.add('info-icon');
+    info.classList.add('fa-solid');
+    info.classList.add('fa-circle-info');
+    label.appendChild(info);
+    label.appendChild(document.createTextNode(tag.name));
+    div.appendChild(label);
+    const input = document.createElement('input');
+    input.setAttribute("type", "checkbox");
+    input.setAttribute("id", `tag_${tag.id}`);
+    input.setAttribute("name", `tag_${tag.id}`);
+    input.checked = checked;
+    div.appendChild(input);
 
-    tags.length = 0;
-    tags.push(...await resp.json());
-    tags.sort((a, b) => {
-        if (b.used !== a.used) {
-            return b.used - a.used;
-        }
-        return a.name.localeCompare(b.name);
-    });
-
-    const container = document.getElementById("tagsContainer");
-
-    const maxUsed = Math.max(...tags.map(t => t.used));
-    const fragment = document.createDocumentFragment();
-    for (const t of tags) {
-        const hue = 240 - (240 * (t.used / maxUsed));
-        const div = document.createElement('div');
-        div.classList.add('tag-wrapper');
-        div.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
-        div.dataset["tagId"] = t.id.toFixed(0);
-        if (tagFilter.name) {
-            div.style.display = t.name.search(tagFilter.name) < 0 ? 'none' : '';
-        }
-        const label = document.createElement('label');
-        label.setAttribute("for", `tag_${t.id}`);
-        const info = document.createElement('i');
-        info.classList.add('info-icon');
-        info.classList.add('fa-solid');
-        info.classList.add('fa-circle-info');
-        label.appendChild(info);
-        label.appendChild(document.createTextNode(t.name));
-        div.appendChild(label);
-        const input = document.createElement('input');
-        input.setAttribute("type", "checkbox");
-        input.setAttribute("id", `tag_${t.id}`);
-        input.setAttribute("name", `tag_${t.id}`);
-        div.appendChild(input);
-        fragment.appendChild(div);
-    }
-
-    container.replaceChildren(fragment);
-
-    loadImageTags();
+    return div;
 }
 
 async function loadImageTags() {
@@ -471,7 +579,7 @@ async function initPager() {
 
         previous.disabled = index <= 0;
         next.disabled = index + 1 >= images.length;
-        jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"];
+        jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
 
         loadImageTags();
     });
@@ -486,7 +594,7 @@ async function initPager() {
 
         previous.disabled = index <= 0;
         next.disabled = index + 1 >= images.length;
-        jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"];
+        jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
 
         loadImageTags();
     });
@@ -806,13 +914,12 @@ function initSearch() {
             next.disabled = newIndex + 1 >= images.length;
         }
         all.textContent = images.length.toFixed(0);
-        jump.disabled = !jump.dataset["latest"] || images[0] === jump.dataset["latest"];
 
         loadImageTags();
     }
 
     searchBar.addEventListener("click", e => {
-        if (e.target.tagName === "SPAN" && e.target.parentElement.classList.contains("search-tag")) {
+        if (e.target.tagName.toUpperCase() === "SPAN" && e.target.parentElement.classList.contains("search-tag")) {
             e.target.parentElement.remove();
             search();
         }
@@ -822,6 +929,60 @@ function initSearch() {
     document.addEventListener("click", e => {
         if (!searchBar.contains(e.target) && !suggestions.contains(e.target)) {
             suggestions.hidePopover();
+        }
+    });
+
+    window.addEventListener("message", e => {
+        if (e.origin != origin) {
+            return;
+        }
+
+        const { type, details } = e.data;
+
+        if (type === "tagUpdated" && details.field === "name") {
+            const el = searchBar.querySelector(`div[data-tag-id="${details.tagId}"]`);
+            if (el) {
+                el.replaceChildren(
+                    document.createTextNode(details.newValue),
+                    el.lastChild
+                );
+            }
+        }
+
+        if (type === "tagsRemoved" && details.status === "success") {
+            let removed = false;
+            for (const tagId of details.removed) {
+                const el = searchBar.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (!el) {
+                    continue;
+                }
+                el.remove();
+                removed = true;
+            }
+            if (removed) {
+                search();
+            }
+        }
+
+        if (type === "tagsMerged" && details.status === "success") {
+            let removed = false;
+            for (const tagId of details.removed) {
+                const el = searchBar.querySelector(`div[data-tag-id="${tagId}"]`);
+                if (!el) {
+                    continue;
+                }
+                el.remove();
+                removed = true;
+            }
+            if (removed) {
+                const el = searchBar.querySelector(`div[data-tag-id="${details.kept}"]`);
+                const tag = tags.find(t => t.id === details.kept);
+                if (!el) {
+                    addTagToBar(tag.id, tag.name);
+                } else {
+                    search();
+                }
+            }
         }
     });
 }

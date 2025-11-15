@@ -43,6 +43,18 @@ window.onload = () => {
                     } else {
                         alertDialog(GENERIC_COMMUNICATION_ERROR)
                     }
+                    return;
+                }
+
+                if (window.opener) {
+                    window.opener.postMessage({
+                        "type": "tagUpdated",
+                        "details": {
+                            "tagId": tagId,
+                            "field": field,
+                            "newValue": newValue
+                        }
+                    }, location.origin);
                 }
             }
         };
@@ -115,6 +127,13 @@ window.onload = () => {
         if (resp.ok) {
             await alertDialog('Tags successfully de-duplicated.');
             fetchTags();
+
+            if (window.opener) {
+                window.opener.postMessage({
+                    "type": "tagsMerged",
+                    "details": await resp.json()
+                }, location.origin);
+            }
         } else if (resp.headers.get("Content-Type").startsWith("application/json")) {
             const info = await resp.json();
             alertDialog(info.reason);
@@ -149,6 +168,13 @@ window.onload = () => {
         if (resp.ok) {
             await alertDialog(`${tagNames.length} tags were successfully deleted.`);
             fetchTags();
+
+            if (window.opener) {
+                window.opener.postMessage({
+                    "type": "tagsRemoved",
+                    "details": await resp.json()
+                }, location.origin);
+            }
         }  else if (resp.headers.get("Content-Type").startsWith("application/json")) {
             const info = await resp.json();
             alertDialog(info.reason);

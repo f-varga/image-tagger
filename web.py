@@ -345,7 +345,7 @@ def add_tag():
         return {
             "id": tag_id,
             "name": name,
-            "description": description,
+            "used": 0,
         }, 201
 
     except (sqlite3.Error, sqlite3.OperationalError):
