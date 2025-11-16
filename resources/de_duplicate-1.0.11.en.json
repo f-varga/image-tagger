@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "tags_data is None": "The list of tags to process was not received.",
+        "not isinstance(tags_list, list)": "The list of tags received seems to in an unexpected structure.",
+        "len(tags_list) < 2": "The list of tags received contains less than two tags."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "It seems that one of the tags you are trying to toggle on was already set for this image. Each tag should be assigned to an image only once."
+    }
+}

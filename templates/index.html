@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
     <head>
-        <title>Image Tagger</title>
+        <title>{{ loc_title }}</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app:version" content="{{ VERSION }}">
@@ -26,10 +26,9 @@
                     tagInfo: "{{ url_for('tag_info') }}",
                     latest: "{{ url_for('latest') }}",
                     searchImages: "{{ url_for('search_images') }}"
-                }
+                },
+                resources: {{ ui | safe }}
             };
-
-            const GENERIC_COMMUNICATION_ERROR = 'An unexpected error occurred while communicating with the server.';
         </script>
     </head>
     <body>
@@ -39,7 +38,7 @@
                     <div class="search-pane">
                         <div class="wrapper">
                             <div class="search-bar">
-                                <input type="text" id="searchInput" name="searchInput" placeholder="Tag to search for...">
+                                <input type="text" id="searchInput" name="searchInput" placeholder="{{ loc_search }}">
                             </div>
                         </div>
                     </div>
@@ -51,10 +50,14 @@
                     <div class="bottom-pane">
                         <div class="wrapper" style="width: 100%; height: auto;">
                             <div class="button-row">
-                                <button id="pagerPrevious" type="button">Previous</button>
-                                <div>Image <span id="pagerCrt">0</span> of <span id="pagerAll">0</span></div>
-                                <button id="pagerNext" type="button">Next</button>
-                                <button id="pagerJump" type="button">Jump</button>
+                                <button id="pagerPrevious" type="button">{{ loc_pager_prev }}</button>
+                                <div>{{ loc_pager_patt
+                                    | replace('{crt}', '<span id="pagerCrt">0</span>')
+                                    | replace('{all}', '<span id="pagerAll">0</span>')
+                                    | safe
+                                }}</div>
+                                <button id="pagerNext" type="button">{{ loc_pager_next }}</button>
+                                <button id="pagerJump" type="button">{{ loc_pager_jump }}</button>
                             </div>
                         </div>
                     </div>
@@ -65,7 +68,7 @@
                     <div class="search-pane">
                         <div class="wrapper">
                             <div class="filter-bar">
-                                <input id="filterTags" name="filterTags" type="text" placeholder="Filter tags...">
+                                <input id="filterTags" name="filterTags" type="text" placeholder="{{ loc_filter }}">
                                 <button id="clearTagsFilter" type="button">&#x2297;</button>
                             </div>
                         </div>
@@ -79,14 +82,14 @@
                         <div class="wrapper" style="width: 100%;">
                             <form id="addTag" action="#">
                                 <div class="field-wrapper">
-                                    <input type="text" id="tagName" name="tagName" placeholder="Tag..." autocomplete="off">
+                                    <input type="text" id="tagName" name="tagName" placeholder="{{ loc_add_tag_name }}" autocomplete="off">
                                 </div>
                                 <div class="field-wrapper">
-                                    <textarea id="tagDescription" name="tagDescription" placeholder="Description..."></textarea>
+                                    <textarea id="tagDescription" name="tagDescription" placeholder="{{ loc_add_tag_desc }}"></textarea>
                                 </div>
                                 <div class="field-wrapper action-buttons">
-                                    <button id="btnManage" type="button">Manage</button>
-                                    <button type="submit">Add</button>
+                                    <button id="btnManage" type="button">{{ loc_add_tag_manage }}</button>
+                                    <button type="submit">{{ loc_add_tag_add }}</button>
                                 </div>
                             </form>
                         </div>
@@ -102,7 +105,7 @@
         <div id="alertBox" popover>
             <p id="alertMessage">All your base are belong to us.</p>
             <div>
-                <button id="ackBtn" type="button">OK</button>
+                <button id="ackBtn" type="button">{{ loc_alert_ack }}</button>
             </div>
         </div>
     </body>

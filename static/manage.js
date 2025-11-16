@@ -41,7 +41,7 @@ window.onload = () => {
                         const info = await resp.json();
                         alertDialog(info.reason);
                     } else {
-                        alertDialog(GENERIC_COMMUNICATION_ERROR)
+                        alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                     }
                     return;
                 }
@@ -113,7 +113,7 @@ window.onload = () => {
             return;
         }
         const tagName = Array.from(container.querySelectorAll('.tag-row')).find(x => parseInt(x.dataset["tagId"]) === selected[0]).querySelector('.tag-name').textContent;
-        if (!await confirmDialog(`Merge ${selected.length} tags into the first one (${tagName})?`)) {
+        if (!await confirmDialog(formatMessage("deDuplicate.confirm", { n: selected.length - 1, target: tagName }))) {
             return;
         }
 
@@ -130,7 +130,7 @@ window.onload = () => {
                     const info = await resp.json();
                     alertDialog(info.reason);
                 } else {
-                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                    alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                 }
                 return;
             }
@@ -152,7 +152,7 @@ window.onload = () => {
         const resp = await fetch(config.urls.deDuplicate, { method: 'POST', body: formData });
 
         if (resp.ok) {
-            await alertDialog('Tags successfully de-duplicated.');
+            await alertDialog(formatMessage("deDuplicate.alertOK"));
             
             const details = await resp.json();
             if (details.status !== "success") {
@@ -178,7 +178,7 @@ window.onload = () => {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
     });
 
@@ -192,9 +192,9 @@ window.onload = () => {
         ).filter(
             x => selected.indexOf(parseInt(x.dataset["tagId"])) >= 0
         ).map(
-            r => r.querySelector('.tag-name').textContent
+            r => `"${r.querySelector('.tag-name').textContent}"`
         );
-        if (!await confirmDialog(`Are you sure you want to deletet the tags (${config.listFormatter.format(tagNames)})?`)) {
+        if (!await confirmDialog(formatMessage("delete.confirm", { n: tagNames.length, tags: tagNames }))) {
             return;
         }
 
@@ -206,7 +206,7 @@ window.onload = () => {
         const resp = await fetch(config.urls.deleteTags, { method: 'POST', body: formData });
 
         if (resp.ok) {
-            await alertDialog(`${tagNames.length} tags were successfully deleted.`);
+            await alertDialog(formatMessage("delete.alertOK", { n: tagNames.length }));
             
             const details = await resp.json();
             if (details.status !== "success") {
@@ -230,12 +230,46 @@ window.onload = () => {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
     });
 
     fetchTags();
 };
+
+function formatMessage(templateKey, values) {
+    let template = config.resources[templateKey] || templateKey;
+
+    const formatValue = (v) => {
+        if (Array.isArray(v)) {
+            return config.listFormatter.format(v); 
+        } else {
+            return v;
+        }
+    };
+
+    // --- Pluralization Logic ---
+    if (typeof template === 'object' && template !== null && 'n' in values) {
+        
+        const count = values['n'];
+        
+        const pluralCategory = config.pluralRules.select(count); 
+
+        // 2. Select the correct template based on the plural category
+        if (template.hasOwnProperty(pluralCategory)) {
+            template = template[pluralCategory];
+        } else if (resourceValue.hasOwnProperty('other')) {
+            template = template['other'];
+        } else {
+            // If the resource object is malformed, use the key as a fallback
+            template = templateKey;
+        }
+    }
+
+    return template.replace(/\{(\w+)\}/g, (match, key) => {
+        return key in values ? formatValue(values[key]) : match;
+    });
+}
 
 function confirmDialog(message) {
 
@@ -281,7 +315,7 @@ async function fetchTags() {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
         return;
     }
@@ -302,7 +336,7 @@ async function fetchTags() {
                 const info = await resp.json();
                 alertDialog(info.reason);
             } else {
-                alertDialog(GENERIC_COMMUNICATION_ERROR)
+                alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
             }
             return;
         }

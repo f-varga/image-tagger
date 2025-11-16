@@ -1,0 +1,6 @@
+{
+    "except": {
+        "FileNotFoundError": "The configured images folder was not found. Please check the IMAGES_FOLDER configuration.",
+        "PermissionError": "The application lacks permission to access the images folder or some files within it. Check application permissions."
+    }
+}

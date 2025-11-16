@@ -1,0 +1,20 @@
+{
+    "template": {
+        "loc_title": "Image Tagger",
+        "loc_search": "Tag to search for...",
+        "loc_pager_prev": "Previous",
+        "loc_pager_next": "Next",
+        "loc_pager_jump": "Jump",
+        "loc_pager_patt": "Image {crt} of {all}",
+        "loc_filter": "Filter tags...",
+        "loc_add_tag_name": "Tag...",
+        "loc_add_tag_desc": "Description...",
+        "loc_add_tag_manage": "Manage",
+        "loc_add_tag_add": "Add",
+        "loc_alert_ack": "OK"
+    },
+    "ui": {
+        "GENERIC_COMMUNICATION_ERROR": "An unexpected error occurred while communicating with the server.",
+        "toggleAddedTag.fail": "Failed to toggle the newly added tag \"{tag}\" for the image: \"{fn}\"."
+    }
+}

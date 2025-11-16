@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
     <head>
         <meta charset="UTF-8">
-        <title>Tag Management</title>
+        <title>{{ loc_title }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app:version" content="{{ VERSION }}">
         <link rel="stylesheet"
@@ -24,21 +24,21 @@
                     updateTag: "{{ url_for('update_tag') }}",
                     deleteTags: "{{ url_for('delete_tags')}}"
                 },
-                listFormatter: new Intl.ListFormat("en", {
+                listFormatter: new Intl.ListFormat("{{ lang }}", {
                     style: "long",
                     type: "conjunction",
-                })
+                }),
+                pluralRules: new Intl.PluralRules("{{ lang }}"),
+                resources: {{ ui | safe }}
             };
-
-            const GENERIC_COMMUNICATION_ERROR = 'An unexpected error occurred while communicating with the server.';
         </script>
     </head>
     <body>
         <div class="toolbar">
-            <div><strong>Tag Management</strong></div>
+            <div><strong>{{ loc_toolbar_title }}</strong></div>
             <div class="button-row">
-                <button id="deleteBtn" type="button" disabled><i class="fa-solid fa-triangle-exclamation"></i> Delete Selected</button>
-                <button id="deduplBtn" type="button" disabled>De-duplicate Selected</button>
+                <button id="deleteBtn" type="button" disabled><i class="fa-solid fa-triangle-exclamation"></i> {{ loc_toobar_delete }}</button>
+                <button id="deduplBtn" type="button" disabled>{{ loc_toolbar_de_duplicate }}</button>
             </div>
         </div>
 
@@ -47,15 +47,15 @@
         <div id="confirmBox" popover>
             <p id="confirmMessage">You sure about that?</p>
             <div style="display:flex; justify-content:end; gap:8px;">
-                <button id="cancelBtn" type="button">Cancel</button>
-                <button id="okBtn" type="button" style="background:#ff00ff; color:white;">OK</button>
+                <button id="cancelBtn" type="button">{{ loc_confirm_no }}</button>
+                <button id="okBtn" type="button" style="background:#ff00ff; color:white;">{{ loc_confirm_yes }}</button>
             </div>
         </div>
 
         <div id="alertBox" popover>
             <p id="alertMessage">All your base are belong to us.</p>
             <div style="display: flex; justify-content: center; align-items: center;">
-                <button id="ackBtn" type="button" style="background: #ff00ff; color: white;">OK</button>
+                <button id="ackBtn" type="button" style="background: #ff00ff; color: white;">{{ loc_alert_ack }}</button>
             </div>
         </div>
     </body>

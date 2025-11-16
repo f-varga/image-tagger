@@ -1,0 +1,6 @@
+{
+    "except": {
+        "json.JSONDecodeError": "The request data may have been corrupted.",
+        "sqlite3.OperationalError": "A database access error occurred. Please verify that the database file has not been corrupted and it is not currently used by another process."
+    }
+}

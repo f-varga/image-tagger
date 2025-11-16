@@ -3,18 +3,23 @@ Image Tagger flask application.
 """
 
 from collections import defaultdict
+import functools
 from io import BytesIO
 import json
 import os
 import random
+import re
 import sqlite3
 import textwrap
+from typing import Any, Mapping
 
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.10"
+VERSION = "1.0.11"
+SUPPORTED_LANGS = ["en", "fr", "ja"]
+DEFAULT_LANG = "en"
 
 app = Flask("Image Tagger")
 
@@ -47,8 +52,104 @@ def init_db_command():
 
     click.echo("Initialized the database.")
 
+
+@click.command('bump-resources-version')
+def bump_resources_version():
+    """Bump version of resources files when no changes that affect localization were made."""
+
+    endpoints = [
+        'root',
+        'tag_management',
+        'images',
+        'search_images',
+        'load_image',
+        'tags',
+        'image_tags',
+        'add_tag',
+        'toggle_tags',
+        'tag_info',
+        'update_tag',
+        'de_duplicate',
+        'delete_tags',
+        'latest',
+    ]
+    ep_group = "|".join(map(re.escape, endpoints))
+    lang_group = "|".join(map(re.escape, SUPPORTED_LANGS))
+    version_pattern = r"\d+\.\d+\.\d+[ab]?"
+    pattern = re.compile(rf"^({ep_group})-({version_pattern})\.({lang_group})\.json$")
+
+    renamed_any = False
+    folder = "resources"
+    click.echo(f"Scanning folder: {folder}")
+    for fn in os.listdir(folder):
+        match = pattern.match(fn)
+        if not match:
+            continue
+        endpoint, version, lang = match.group(1), match.group(2), match.group(3)
+        if version == VERSION:
+            click.echo(f"    ✔ The resources file \"{fn}\" was already "
+                       f"at the current version. Skipping.")
+            continue
+        new_fn = f"{endpoint}-{VERSION}.{lang}.json"
+        os.rename(os.path.join(folder, fn), os.path.join(folder, new_fn))
+        click.echo(f"    ✔ Renamed \"{fn}\" to \"{new_fn}\".")
+        renamed_any = True
+
+    if not renamed_any:
+        click.echo("No resource files versions were bumped.")
+    else:
+        click.echo("✔ Version bump complete.")
+
+
+def with_localization(func):
+    """Wrapper method used for annotating endpoints for localization."""
+
+    def merge_recursively(a: dict, b: dict):
+        for key, value in b.items():
+            if key in a and isinstance(a[key], dict) and isinstance(value, dict):
+                merge_recursively(a[key], value)
+            else:
+                a[key] = value
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # Detect best match from Accept-Language headers
+        lang = request.accept_languages.best_match(SUPPORTED_LANGS)
+
+        # If no match, fall back to default
+        if lang is None:
+            lang = DEFAULT_LANG
+
+        # Load JSON resource file
+        filename = os.path.join("resources", f"{request.endpoint}-{VERSION}.{lang}.json")
+        default = os.path.join("resources", f"{request.endpoint}-{VERSION}.{DEFAULT_LANG}.json")
+        try:
+            with current_app.open_resource(filename, "r", encoding="utf-8") as f:
+                resources = json.load(f)
+        except FileNotFoundError:
+            # Safety fallback in case the file is missing
+            with current_app.open_resource(default, "r", encoding="utf-8") as f:
+                resources = json.load(f)
+
+        # Load common JSON resource file
+        filename = os.path.join("resources", f"common-{VERSION}.{lang}.json")
+        default = os.path.join("resources", f"common-{VERSION}.{DEFAULT_LANG}.json")
+        try:
+            with current_app.open_resource(filename, "r", encoding="utf-8") as f:
+                merge_recursively(resources, json.load(f))
+        except FileNotFoundError:
+            # Safety fallback in case the file is missing
+            with current_app.open_resource(default, "r", encoding="utf-8") as f:
+                merge_recursively(resources, json.load(f))
+
+        # Pass resources as a keyword argument
+        return func(*args, lang=lang, resources=resources, **kwargs)
+
+    return wrapper
+
 app.teardown_appcontext(_release_db)
 app.cli.add_command(init_db_command)
+app.cli.add_command(bump_resources_version)
 
 
 def _error_image(status, message):
@@ -73,6 +174,10 @@ def _error_image(status, message):
 def server_error(err):
     """Handle errors gracefully."""
 
+    lang = request.accept_languages.best_match(SUPPORTED_LANGS)
+    if lang is None:
+        lang = DEFAULT_LANG
+
     if request.endpoint == 'load_image':
         img_io = _error_image(err.code, err.description)
         response = send_file(
@@ -82,7 +187,7 @@ def server_error(err):
             max_age=300
         )
 
-        return response, err.code
+        return response, err.code, { "Content-Language": lang }
 
     return jsonify({
         "error": {
@@ -90,33 +195,50 @@ def server_error(err):
             "name": err.name,
         },
         "reason": err.description,
-    }), err.code
+    }), err.code, { "Content-Language": lang }
 
 
 @app.route('/', methods=('GET',))
-def root():
+@with_localization
+def root(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """The main page of the application."""
 
     context = {
         "VERSION": VERSION,
+        "lang": lang,
     }
 
-    return render_template("index.html", **context)
+    if "template" in resources:
+        context.update(resources.get("template"))
+
+    if "ui" in resources:
+        context["ui"] = json.dumps(resources.get("ui"))
+
+    return render_template("index.html", **context), 200, { "Content-Language": lang }
 
 
 @app.route('/tagManagement', methods=('GET',))
-def tag_management():
+@with_localization
+def tag_management(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """The page that allows managing tags."""
 
     context = {
         "VERSION": VERSION,
+        "lang": lang,
     }
 
-    return render_template("manage.html", **context)
+    if "template" in resources:
+        context.update(resources.get("template"))
+
+    if "ui" in resources:
+        context["ui"] = json.dumps(resources.get("ui"))
+
+    return render_template("manage.html", **context), 200, { "Content-Language": lang }
 
 
 @app.route('/images', methods=('GET',))
-def images():
+@with_localization
+def images(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Lists all the images."""
 
     folder = current_app.config["IMAGES_FOLDER"]
@@ -126,36 +248,38 @@ def images():
             fn for fn in sorted(os.listdir(folder))
             if os.path.isfile(os.path.join(folder, fn))
             and os.path.splitext(fn)[-1] in ('.bmp', '.jpg', '.png')
-        ], 200
+        ], 200, { "Content-Language": lang }
 
     except FileNotFoundError:
         current_app.logger.exception('Failed to list images: Configured folder not found.')
         return abort(500,
-                     'The configured images folder was not found. '
-                     'Please check the IMAGES_FOLDER configuration.')
+                     resources.get("except").get("FileNotFoundError"))
     except PermissionError:
         current_app.logger.exception('Failed to list images: Permission denied.')
         return abort(500,
-                     'The application lacks permission to access the images folder or '
-                     'some files within it. Check application permissions.')
+                     resources.get("except").get("PermissionError"))
 
 
 @app.route('/searchImages', methods=('POST',))
-def search_images():
+@with_localization
+def search_images(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Search images by tags"""
 
     tags_data = request.form.get('tags')
     if tags_data is None:
-        return abort(400, 'The list of tags to search for was not sent.')
+        return abort(400, resources.get("validation").get("tags_data is None"))
 
     try:
         tags_list = json.loads(tags_data)
 
     except json.JSONDecodeError:
-        return abort(400, 'The request data may have been corrupted.')
+        return abort(400, resources.get("except").get("json.JSONDecodeError"))
 
-    if not isinstance(tags_list, list) or not tags_list:
-        return abort(400, 'The list of tags received seems to be in an unexpected structure.')
+    is_what_we_expect = {
+        'tags': isinstance(tags_list, list) and tags_list
+    }
+    if not is_what_we_expect['tags']:
+        return abort(400, resources.get("validation").get("not is_what_we_expect['tags']"))
 
     c = None
     try:
@@ -184,21 +308,21 @@ def search_images():
 
         found_images = [fn for fn, *_ in c]
 
-        return found_images, 200
+        return found_images, 200, { "Content-Language": lang }
 
     except sqlite3.OperationalError:
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/loadImage', methods=('GET',))
-def load_image():
+@with_localization
+def load_image(lang: str, # pylint: disable=unused-argument
+               resources: Mapping[str, Mapping[str, Any]]):
     """Loads and optionally resizes an image, serving it as JPEG."""
 
     folder = current_app.config["IMAGES_FOLDER"]
@@ -206,11 +330,11 @@ def load_image():
     make_thumbnail = request.args.get('tn', 'false').lower() == 'true'
 
     if not fn:
-        return abort(400, 'No filename specified.')
+        return abort(400, resources.get("validation").get("not fn"))
 
     path = os.path.join(folder, fn)
     if not os.path.isfile(path):
-        return abort(404, 'The file no longer exists.')
+        return abort(404, resources.get("validation").get("not os.path.isfile(path)"))
 
     try:
         with Image.open(path) as img:
@@ -227,33 +351,33 @@ def load_image():
             img_io.seek(0)
 
             # Serve directly from memory
-            return send_file(
+            response = send_file(
                 img_io,
                 mimetype='image/jpeg',
                 as_attachment=False,
                 max_age=2_592_000  # 30 days
             )
 
+            return response
+
     except PermissionError:
         current_app.logger.exception("Could not load image file.")
         return abort(500,
-                     "The image file cannot be opened. Verify the permissions "
-                     "and check if another application is not currently using "
-                     "the file.")
+                     resources.get("except").get("PermissionError"))
     except UnidentifiedImageError:
         current_app.logger.exception("Unidentified image format.")
         return abort(500,
-                     "The image format for the current file is not recognized.")
+                     resources.get("except").get("UnidentifiedImageError"))
     except OSError:
         current_app.logger.exception("File access error.")
         return abort(500,
-                     "The operating system reported an error durring the "
-                     "handling of the image file.")
+                     resources.get("except").get("OSError"))
 
 
 
 @app.route('/tags', methods=('GET',))
-def tags():
+@with_localization
+def tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Loads the list of tags"""
 
     c = None
@@ -265,27 +389,26 @@ def tags():
 
         t = [{ "id": i, "name": n, "used": u } for i, n, u in c]
 
-        return t, 200
+        return t, 200, { "Content-Language": lang }
 
     except sqlite3.OperationalError:
         current_app.logger.exception('Database Operational Error')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/imageTags', methods=('GET',))
-def image_tags():
+@with_localization
+def image_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Returns the list of tag ids for an image"""
 
     fn = request.args.get('fn', None)
 
     if not fn:
-        return abort(400, 'The file name parameter was not received.')
+        return abort(400, resources.get("validation").get("not fn"))
 
     c = None
     try:
@@ -303,30 +426,35 @@ def image_tags():
         c.execute("SELECT tag_id FROM tagged_images WHERE image_id = ?;",
                   r)
 
-        t = [x for x, *_ in c]
+        tags_list = [x for x, *_ in c]
 
-        return t, 200
+        return tags_list, 200, { "Content-Language": lang }
 
     except sqlite3.OperationalError:
         current_app.logger.exception('Database Operational Error')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/addTag', methods=('POST',))
-def add_tag():
+@with_localization
+def add_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Adds a new tag to the list of available tags"""
 
     name = request.form.get('name', '')
     description = request.form.get('description', None)
 
     if not name or not name.strip():
-        return abort(400, 'The tag name is required, but was not present.')
+        return abort(400,
+                     resources.get("validation").get("not name or not name.strip()"))
+
+    name = name.strip()
+    description = (description.strip()
+                   if description is not None and description.strip()
+                   else None)
 
     c = None
     try:
@@ -346,40 +474,47 @@ def add_tag():
             "id": tag_id,
             "name": name,
             "used": 0,
-        }, 201
+        }, 201, { "Content-Language": lang }
 
-    except (sqlite3.Error, sqlite3.OperationalError):
+    except sqlite3.IntegrityError:
+        db.rollback()
+        current_app.logger.exception('Database Integrity Error.')
+        return abort(500,
+                     resources.get("except").get("sqlite3.IntegrityError"))
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/toggleTags', methods=('POST',))
-def toggle_tags():
+@with_localization
+def toggle_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Toggle tags for image"""
 
     fn = request.form.get('fn', None)
     tags_data = request.form.get('tags', None)
 
-    if not fn or not fn.strip():
-        return abort(400, 'The filename of the image was not given.')
+    if not fn:
+        return abort(400, resources.get("validation").get("not fn"))
     if not tags_data:
-        return abort(400, 'The list of tags to toggle was not sent.')
+        return abort(400, resources.get("validation").get("not tags_data"))
 
     try:
         tags_to_toggle = json.loads(tags_data)
 
     except json.JSONDecodeError:
-        return abort(400, 'The request data may have been corrupted.')
+        return abort(400, resources.get("except").get("json.JSONDecodeError"))
 
-    if not isinstance(tags_to_toggle, list) or not tags_to_toggle:
-        return abort(400, 'The list of tags received seems to be in an unexpected structure.')
+    is_what_we_expect = {
+        'tags': isinstance(tags_to_toggle, list) and tags_to_toggle
+    }
+    if not is_what_we_expect['tags']:
+        return abort(400, resources.get("validation").get("not is_what_we_expect['tags']"))
 
     c = None
     try:
@@ -417,35 +552,32 @@ def toggle_tags():
 
         db.commit()
 
-        return list(current_tags ^ set(tags_to_toggle)), 200
+        return list(current_tags ^ set(tags_to_toggle)), 200, { "Content-Language": lang }
 
     except sqlite3.IntegrityError:
         db.rollback()
         current_app.logger.exception('Database Integrity Error.')
         return abort(500,
-                     'A database integrity error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
-    except (sqlite3.Error, sqlite3.OperationalError):
+                     resources.get("except").get("sqlite3.IntegrityError"))
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/tagInfo', methods=('GET',))
-def tag_info():
+@with_localization
+def tag_info(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Returns information on the specified tag"""
 
-    t = request.args.get('tag', None)
+    tag_id = request.args.get('tag', None)
 
-    if t is None:
-        return abort(400, 'The tag ID was not received.')
+    if tag_id is None:
+        return abort(400, resources.get("validation").get("tag_id is None"))
 
     c = None
     try:
@@ -453,49 +585,50 @@ def tag_info():
         c = db.cursor()
 
         c.execute("SELECT description, used FROM tags WHERE tag_id = ?;",
-                  (t,))
+                  (tag_id,))
         desc, used = c.fetchone()
 
-        r = {
+        resp = {
             "description": desc,
             "used": used,
             "images": [],
         }
 
         c.execute("SELECT image_id FROM tagged_images WHERE tag_id = ?;",
-                  (t,))
+                  (tag_id,))
 
-        i = [x for x, *_ in c]
-        i = i if len(i) < 4 else random.sample(i, 3)
+        image_ids = [x for x, *_ in c]
+        image_ids = image_ids if len(image_ids) < 4 else random.sample(image_ids, 3)
 
-        r["images"] = [next(f for f, *_ in
-                            c.execute("SELECT fn FROM images WHERE image_id = ?;",
-                                      (x,)))
-                       for x in i]
+        c.execute(
+            f"SELECT fn FROM images WHERE image_id IN ({', '.join('?' * len(image_ids))});",
+            image_ids
+        )
 
-        return r
+        resp["images"] = [fn for fn, *_ in c]
 
-    except (sqlite3.Error, sqlite3.OperationalError):
+        return resp, 200, { "Content-Language": lang }
+
+    except sqlite3.OperationalError:
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/updateTag', methods=['POST'])
-def update_tag():
+@with_localization
+def update_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Updates a tag's name or description (only fields provided)."""
 
     tag_id = request.form.get('tag_id')
     name = request.form.get('name')
     description = request.form.get('description')
 
-    if not tag_id:
-        return abort(400, 'The tag ID was not received.')
+    if tag_id is None:
+        return abort(400, resources.get("validation").get("tag_id is None"))
 
     c = None
     try:
@@ -513,7 +646,7 @@ def update_tag():
             params.append(description)
 
         if not fields:
-            return { "status": "no changes" }, 200
+            return { "status": "no changes" }, 200, { "Content-Language": lang }
 
         db.execute("BEGIN")
 
@@ -522,39 +655,43 @@ def update_tag():
 
         db.commit()
 
-        return { "status": "success" }, 200
+        return { "status": "success" }, 200, { "Content-Language": lang }
 
-    except (sqlite3.Error, sqlite3.OperationalError):
+    except sqlite3.IntegrityError:
+        db.rollback()
+        current_app.logger.exception('Database Integrity Error.')
+        return abort(500,
+                     resources.get("except").get("sqlite3.IntegrityError"))
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/deDuplicate', methods=('POST',))
-def de_duplicate():
+@with_localization
+def de_duplicate(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Merge several tags into the first one and remove the redundant ones."""
 
     tags_data = request.form.get('tags')
     if tags_data is None:
-        return abort(400, 'The list of tags to search for was not sent.')
+        return abort(400, resources.get("validation").get("tags_data is None"))
 
     try:
         tags_list = json.loads(tags_data)
 
     except json.JSONDecodeError:
-        return abort(400, 'The request data may have been corrupted.')
+        return abort(400, resources.get("except").get("json.JSONDecodeError"))
 
     if not isinstance(tags_list, list):
-        return abort(400, 'The list of tags received seems to in an unexpected structure.')
+        return abort(400, resources.get("validation").get("not isinstance(tags_list, list)"))
 
     if len(tags_list) < 2:
-        return abort(400, 'The list of tags received contains less than two tags.')
+        return abort(400, resources.get("validation").get("len(tags_list) < 2"))
 
     keep_id = tags_list[0]
     remove_ids = tags_list[1:]
@@ -570,10 +707,10 @@ def de_duplicate():
         c.execute(
             f"""
             DELETE FROM tagged_images
-            WHERE tag_id IN ({','.join('?' * len(remove_ids))})
-                AND image_id IN (
-                    SELECT image_id FROM tagged_images WHERE tag_id = ?
-                );
+            WHERE tag_id IN ({', '.join('?' * len(remove_ids))})
+            AND image_id IN (
+                SELECT image_id FROM tagged_images WHERE tag_id = ?
+            );
             """,
             (*remove_ids, keep_id)
         )
@@ -583,64 +720,68 @@ def de_duplicate():
             f"""
             UPDATE OR IGNORE tagged_images
             SET tag_id = ?
-            WHERE tag_id IN ({','.join('?' * len(remove_ids))});
+            WHERE tag_id IN ({', '.join('?' * len(remove_ids))});
             """,
             (keep_id, *remove_ids)
         )
 
         # Step 3: Delete the redundant tag rows
         c.execute(
-            f"DELETE FROM tags WHERE tag_id IN ({','.join('?' * len(remove_ids))});",
+            f"DELETE FROM tags WHERE tag_id IN ({', '.join('?' * len(remove_ids))});",
             remove_ids
         )
 
         # Step 4: Update used
         c.execute(
             "UPDATE OR IGNORE tags SET used = ("
-            "SELECT COUNT(*) FROM tagged_images WHERE tag_id = ?"
+                "SELECT COUNT(*) FROM tagged_images WHERE tag_id = ?"
             ") WHERE tag_id = ?;",
             (keep_id, keep_id)
         )
 
         db.commit()
 
-        return {"status": "success", "kept": keep_id, "removed": remove_ids}, 200
+        return {
+            "status": "success",
+            "kept": keep_id,
+            "removed": remove_ids
+        }, 200, { "Content-Language": lang }
 
     except sqlite3.IntegrityError:
         db.rollback()
         current_app.logger.exception('Database Integrity Error.')
         return abort(500,
-                     'A database integrity error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
-    except (sqlite3.Error, sqlite3.OperationalError):
+                     resources.get("except").get("sqlite3.IntegrityError"))
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/deleteTags', methods=('POST',))
-def delete_tags():
+@with_localization
+def delete_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Delete the tags specified by the "tags" form field"""
 
     tags_data = request.form.get('tags', None)
     if tags_data is None:
-        return abort(400, 'The list of tags to search for was not sent.')
+        return abort(400, resources.get("validation").get("tags_data is None"))
 
     try:
         tags_list = json.loads(tags_data)
 
     except json.JSONDecodeError:
-        return abort(400, 'The request data may have been corrupted.')
+        return abort(400, resources.get("except").get("json.JSONDecodeError"))
 
-    if not isinstance(tags_list, list) or not tags_list:
-        return abort(400, 'The list of tags received seems to in an unexpected structure.')
+    is_what_we_expect = {
+        'tags': isinstance(tags_list, list) and tags_list
+    }
+    if not is_what_we_expect['tags']:
+        return abort(400, resources.get("validation").get("not is_what_we_expect['tags']"))
 
     c = None
     try:
@@ -653,42 +794,37 @@ def delete_tags():
         c.execute(
             f"""
             DELETE FROM tagged_images
-            WHERE tag_id IN ({','.join('?' * len(tags_list))});
+            WHERE tag_id IN ({', '.join('?' * len(tags_list))});
             """,
             tags_list
         )
 
         # Step 2: Delete the actual tags
         c.execute(
-            f"DELETE FROM tags WHERE tag_id IN ({','.join('?' * len(tags_list))});",
+            f"DELETE FROM tags WHERE tag_id IN ({', '.join('?' * len(tags_list))});",
             tags_list
         )
 
         db.commit()
 
-        return {"status": "success", "removed": tags_list}, 200
+        return {
+            "status": "success",
+            "removed": tags_list
+        }, 200, { "Content-Language": lang }
 
-    except sqlite3.IntegrityError:
-        db.rollback()
-        current_app.logger.exception('Database Integrity Error.')
-        return abort(500,
-                     'A database integrity error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
-    except (sqlite3.Error, sqlite3.OperationalError):
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()
 
 
 @app.route('/latest', methods=('GET',))
-def latest():
+@with_localization
+def latest(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Returns the latest image that was tagged"""
 
     c = None
@@ -703,15 +839,13 @@ def latest():
         if r is not None:
             return { "fn": r[0] }, 200
 
-        return { "fn": None }, 200
+        return { "fn": None }, 200, { "Content-Language": lang }
 
-    except (sqlite3.Error, sqlite3.OperationalError):
+    except sqlite3.OperationalError:
         db.rollback()
         current_app.logger.exception('Database Operational Error.')
         return abort(500,
-                     'A database access error occurred. Please verify that '
-                     'the database file has not been corrupted and it is '
-                     'not currently used by another process.')
+                     resources.get("except").get("sqlite3.OperationalError"))
     finally:
         if c is not None:
             c.close()

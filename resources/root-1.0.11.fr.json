@@ -1,0 +1,20 @@
+{
+    "template": {
+        "loc_title": "Étiqueteur d'Images",
+        "loc_search": "Étiquette à rechercher...",
+        "loc_pager_prev": "Précédent",
+        "loc_pager_next": "Suivant",
+        "loc_pager_jump": "Sauter",
+        "loc_pager_patt": "Image {crt} sur {all}",
+        "loc_filter": "Filtrer les étiquettes...",
+        "loc_add_tag_name": "Étiquette...",
+        "loc_add_tag_desc": "Description...",
+        "loc_add_tag_manage": "Gérer",
+        "loc_add_tag_add": "Ajouter",
+        "loc_alert_ack": "OK"
+    },
+    "ui": {
+        "GENERIC_COMMUNICATION_ERROR": "Une erreur inattendue est survenue lors de la communication avec le serveur.",
+        "toggleAddedTag.fail": "Échec de l'activation/désactivation de l'étiquette nouvellement ajoutée \"{tag}\" pour l'image : \"{fn}\"."
+    }
+}

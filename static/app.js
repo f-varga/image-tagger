@@ -13,6 +13,15 @@ const tagFilter = {
     "name": null
 };
 
+function formatMessage(template, values) {
+    if (template in config.resources) {
+        template = config.resources[template];
+    }
+    return template.replace(/\{(\w+)\}/g, (match, key) => {
+        return key in values ? values[key] : match;
+    });
+}
+
 function alertDialog(message) {
 
     const alertBox = document.getElementById('alertBox');
@@ -58,7 +67,7 @@ function initAddTag() {
                 const info = await resp.json();
                 alertDialog(info.reason);
             } else {
-                alertDialog(GENERIC_COMMUNICATION_ERROR)
+                alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
             }
             return;
         }
@@ -86,7 +95,7 @@ function initAddTag() {
                 const info = await resp.json();
                 alertDialog(info.reason);
             } else {
-                alertDialog(GENERIC_COMMUNICATION_ERROR)
+                alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
             }
             return;
         }
@@ -94,7 +103,7 @@ function initAddTag() {
         const toggled = (await resp.json()).some(t => t == tag.id);
 
         if (!toggled) {
-            alertDialog("Failed to toggle the newly added tag");
+            alertDialog("toggleAddedTag.fail", { tag: tag.name, fn: fn });
         }
 
         tags.push(tag);
@@ -132,7 +141,7 @@ async function initTags() {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
         return;
     }
@@ -315,7 +324,7 @@ async function initTags() {
                         const info = await resp.json();
                         alertDialog(info.reason);
                     } else {
-                        alertDialog(GENERIC_COMMUNICATION_ERROR)
+                        alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                     }
                     continue;
                 }
@@ -350,7 +359,7 @@ async function initTags() {
                 const info = await resp.json();
                 alertDialog(info.reason);
             } else {
-                alertDialog(GENERIC_COMMUNICATION_ERROR)
+                alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
             }
             return;
         }
@@ -486,7 +495,7 @@ async function loadImageTags() {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR);
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"));
         }
         return;
     }
@@ -512,7 +521,7 @@ async function initImageViewer() {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
         return;
     }
@@ -545,7 +554,7 @@ async function initPager() {
             const info = await resp.json();
             alertDialog(info.reason);
         } else {
-            alertDialog(GENERIC_COMMUNICATION_ERROR)
+            alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
         }
         return;
     }
@@ -873,7 +882,7 @@ function initSearch() {
                     const info = await resp.json();
                     alertDialog(info.reason);
                 } else {
-                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                    alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                 }
                 return;
             }
@@ -891,7 +900,7 @@ function initSearch() {
                     const info = await resp.json();
                     alertDialog(info.reason);
                 } else {
-                    alertDialog(GENERIC_COMMUNICATION_ERROR)
+                    alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                 }
                 return;
             }

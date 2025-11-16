@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "tags_data is None": "La liste des étiquettes à supprimer n'a pas été reçue.",
+        "not is_what_we_expect['tags']": "La liste des étiquettes reçue semble avoir une structure inattendue."
+    }
+}

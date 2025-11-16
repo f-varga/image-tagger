@@ -1,0 +1,8 @@
+{
+    "validation": {
+        "tag_id is None": "L'identifiant de l'étiquette n'a pas été réçu."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "Le nom de l'étiquette que vous avez fourni existe déjà dans la base de données. Les noms d'étiquettes doivent être uniques."
+    }
+}

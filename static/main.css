@@ -89,7 +89,7 @@ body {
     transition: all 0.2s ease;
     /* smooth hover effect */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100px;
+    width: 130px;
 }
 
 .button-row button:hover:not(:disabled) {

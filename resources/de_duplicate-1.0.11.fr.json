@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "tags_data is None": "La liste des étiquettes à traiter n'a pas été reçue.",
+        "not isinstance(tags_list, list)": "La liste des étiquettes reçue semble avoir une structure inattendue.",
+        "len(tags_list) < 2": "La liste des étiquettes reçue contient moins de deux étiquettes."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "Il semble que l'une des étiquettes que vous essayez d'activer était déjà définie pour cette image. Chaque étiquette ne doit être attribuée à une image qu'une seule fois."
+    }
+}

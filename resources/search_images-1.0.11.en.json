@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "tags_data is None": "The list of tags to search for was not received.",
+        "not is_what_we_expect['tags']": "The list of tags received seems to be in an unexpected structure."
+    }
+}

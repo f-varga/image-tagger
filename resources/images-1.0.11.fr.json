@@ -1,0 +1,6 @@
+{
+    "except": {
+        "FileNotFoundError": "Le dossier d'images configuré n'a pas été trouvé. Veuillez vérifier la configuration IMAGES_FOLDER.",
+        "PermissionError": "L'application ne dispose pas des autorisations nécessaires pour accéder au dossier d'images ou à certains fichiers qu'il contient. Vérifiez les autorisations de l'application."
+    }
+}

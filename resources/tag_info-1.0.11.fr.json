@@ -1,0 +1,5 @@
+{
+    "validation": {
+        "tag_id is None": "L'identifiant de l'étiquette n'a pas été réçu."
+    }
+}

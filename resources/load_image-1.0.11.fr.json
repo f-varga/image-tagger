@@ -1,0 +1,11 @@
+{
+    "validation": {
+        "not fn": "Nom de fichier non spécifié.",
+        "not os.path.isfile(path)": "Le fichier n'existe plus."
+    },
+    "except": {
+        "PermissionError": "Le fichier image ne peut pas être ouvert. Vérifiez les permissions et assurez-vous qu'aucune autre application n'est actuellement en train de l'utiliser.",
+        "UnidentifiedImageError": "Le format de l'image pour le fichier actuel n'est pas reconnu.",
+        "OSError": "Le système d'exploitation a signalé une erreur lors du traitement du fichier image."
+    }
+}

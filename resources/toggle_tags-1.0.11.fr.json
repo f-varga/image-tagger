@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "not fn": "Le nom de fichier de l'image n'a pas été reçu.",
+        "not tags_data": "La liste des étiquettes à basculer (activer/désactiver) n'a pas été reçue.",
+        "not is_what_we_expect['tags']": "La liste des étiquettes reçue semble avoir une structure inattendue."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "Il semble que l'une des étiquettes que vous essayez d'activer était déjà définie pour cette image. Chaque étiquette ne doit être attribuée à une image qu'une seule fois."
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "template": {
+        "loc_title": "Image Tagger - Tag Management",
+        "loc_toolbar_title": "Tag management",
+        "loc_toobar_delete": "Delete Selected",
+        "loc_toolbar_de_duplicate": "De-duplicate Selected",
+        "loc_confirm_no": "No",
+        "loc_confirm_yes": "Yes",
+        "loc_alert_ack": "OK"
+    },
+    "ui": {
+        "deDuplicate.confirm": {
+            "one": "Merge {n} tag into the first one you selected ({target})?",
+            "other": "Merge {n} tags into the first one you selected ({target})?"
+        },
+        "deDuplicate.alertOK": "The tags you selected have been successfully de-duplicated.",
+        "delete.confirm": {
+            "one": "Are you sure you want to delete the following tag: {tags}?",
+            "other": "Are you sure you want to delete the following tags: {tags}?"
+        },
+        "delete.alertOK": {
+            "one": "{n} tag has been successfully deleted.",
+            "other": "{n} tags have been successfully deleted."
+        }
+    }
+}
