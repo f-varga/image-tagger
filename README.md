@@ -56,10 +56,10 @@ A lightweight, hobby project built with **Flask** for demonstrating skills in we
 
     To use the content translation feature you should install CUDA (or ROCm - depending on your graphics card manufacturer, unless you don't have a dedicated graphics card or it is not supported by the ollama framework), then install ollama (download and install from [ollama.com](https://ollama.com/)). You will also need to follow the instructions to download and install a model.
 
-    When ollama is up and running, unless you have it installed on the same machine, you will have to configure the server to listen for outside connections (this might also require you to open up the port 11434 - or another port of your choosing for http connections).
+    When ollama is up and running, unless you have it installed on the same machine, you will have to configure the server to listen for outside connections (this might also require you to open up the port `11434` - or another port of your choosing for http connections).
 
 4.  **Configuration:**
-    * Create a `config.json` file in the project root, with the following values (for Windows you will have to escape the '\' character in paths, since '\' is a special character in JSON):
+    * Create a `config.json` file in the project root, with the following values (for Windows you will have to escape the '\\' character in paths, since '\\' is a special character in JSON):
 
     ```json
     {
