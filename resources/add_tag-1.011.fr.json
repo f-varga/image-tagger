@@ -1,6 +1,7 @@
 {
     "validation": {
-        "not name or not name.strip()": "Le nom de l'étiquette est requis, mais il était absent."
+        "not name or not name.strip()": "Le nom de l'étiquette est requis, mais il était absent.",
+        "content_lang not in SUPPORTED_LANGS": "La langue du contenu n'est pas actuellement supportée."
     },
     "except": {
         "sqlite3.IntegrityError": "Le nom de l'étiquette que vous avez fourni existe déjà dans la base de données. Les noms d'étiquettes doivent être uniques."

@@ -11,7 +11,9 @@
         "loc_add_tag_desc": "Description...",
         "loc_add_tag_manage": "Manage",
         "loc_add_tag_add": "Add",
-        "loc_alert_ack": "OK"
+        "loc_alert_ack": "OK",
+        "loc_content_lang": "The language of the tag",
+        "loc_select_content_lang": "-- select language --"
     },
     "ui": {
         "GENERIC_COMMUNICATION_ERROR": "An unexpected error occurred while communicating with the server.",

@@ -1,0 +1,16 @@
+{
+    "validation": {
+        "api_not_configured": "L'API ollama n'a pas été configurée. Aucune étiquette n'a été traduite.",
+        "tags_data is None": "La liste des étiquettes à traduire n'a pas été reçue.",
+        "not isinstance(tags_list, list)": "La liste des étiquettes à traduire n'était pas dans le format attendu.",
+        "source_lang is None": "La langue source n'a pas été reçue.",
+        "source_lang not in SUPPORTED_LANGS": "La langue source ne fait pas partie de la liste des langues prises en charge.",
+        "dest_lang is None": "La langue de destination n'a pas été reçue.",
+        "dest_lang not in SUPPORTED_LANGS": "La langue de destination ne fait pas partie de la liste des langues prises en charge."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "L'une des étiquettes traduites a déclenché une erreur de doublon.",
+        "ConnectionError": "Échec de la connexion à l'API ollama.",
+        "AssertionError": "La réponse de l'API n'était pas dans le format attendu."
+    }
+}

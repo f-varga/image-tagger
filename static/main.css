@@ -144,6 +144,7 @@ form {
 .field-wrapper {
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 /* Input fields */
@@ -169,6 +170,49 @@ form {
 .field-wrapper textarea {
     min-height: 150px;
     resize: none;
+}
+
+/* Wrapper needed for custom arrow */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Style <select> like your inputs */
+.select-wrapper select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    padding-right: 2rem; /* space for arrow */
+    border: none;
+    border-bottom: 1px solid #ccc;
+    font-size: 1rem;
+    font-family: inherit;
+    background: transparent;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: border-color 0.2s;
+
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Pink highlight on focus (matching inputs) */
+.select-wrapper select:focus {
+    outline: none;
+    border-bottom: 1px solid #ff00ff;
+}
+
+/* Custom arrow — THIS works */
+.select-wrapper::after {
+    content: "▾"; /* arrow symbol */
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none; /* click-through */
+    font-size: 0.9rem;
 }
 
 /* Add button aligned to right */

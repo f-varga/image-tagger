@@ -54,6 +54,10 @@ A lightweight, hobby project built with **Flask** for demonstrating skills in we
     pip install -r requirements.txt
     ```
 
+    To use the content translation feature you should install CUDA (or ROCm - depending on your graphics card manufacturer, unless you don't have a dedicated graphics card or it is not supported by the ollama framework), then install ollama (download and install from [ollama.com](https://ollama.com/)). You will also need to follow the instructions to download and install a model.
+
+    When ollama is up and running, unless you have it installed on the same machine, you will have to configure the server to listen for outside connections (this might also require you to open up the port 11434 - or another port of your choosing for http connections).
+
 4.  **Configuration:**
     * Create a `config.json` file in the project root, with the following values (for Windows you will have to escape the '\' character in paths, since '\' is a special character in JSON):
 
@@ -62,13 +66,29 @@ A lightweight, hobby project built with **Flask** for demonstrating skills in we
         "DEBUG": false,
         "SECRET_KEY": "192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf",
         "DATABASE": "tags.db3",
-        "IMAGES_FOLDER": "C:\\Users\\franc\\Pictures\\Downloaded Wallpapers"
+        "IMAGES_FOLDER": "C:\\Users\\franc\\Pictures\\Downloaded Wallpapers",
+        "OLLAMA_HOST": "127.0.0.1",
+        "OLLAMA_PORT": 11434,
+        "OLLAMA_MODEL": "gemma3:12b",
+        "OLLAMA_TRANSLATE_TAGS_PROMPT": "You are an expert translation assistant. Your task is to translate the 'name' and 'description' fields of the following JSON data from {source_lang} language to {dest_lang}.\n{preferred_translations_notes}\nINPUT:\n```json\n{tags}\n```",
+        "OLLAMA_PREFERRED_TRANSLATIONS": {
+            "intro": "NOTE:",
+            "note": " - whenever you see \"{source_term}\" you should translate it as \"{dest_term}\";",
+            "en-fr": [
+                ["knick-knack", "truc"],
+                ...
+            ],
+            "fr-en": [
+                ...
+            ]
+        }
     }
     ```
 
     * The `DATABASE` and `IMAGES_FOLDER` keys are specific to the application:
         * `DATABASE` controls the name of your local database file. If you change this value, rename the `tags.db3` file in the root of the project to the new name or run: `flask --app web init-db` again.
         * `IMAGES_FOLDER` contains the path to a local folder where you store the images you want to tag. This should be a valid path and remember: the application will only look inside this folder and not any of it's subfolders.
+        * `OLLAMA_*` configuration keys allow using a running ollama server to do content translation on the fly. All keys except `OLLAMA_PREFERRED_TRANSLATIONS` are required for the configuration to work.
     
     * For the other options, please consult the [flask documentation](https://flask.palletsprojects.com/en/stable/).
 

@@ -1,0 +1,16 @@
+{
+    "validation": {
+        "api_not_configured": "The ollama API was not configured. No tags were translated",
+        "tags_data is None": "The list of tags to translate was not received.",
+        "not isinstance(tags_list, list)": "The list of tags to translate was not in the expected format.",
+        "source_lang is None": "The source language was not received.",
+        "source_lang not in SUPPORTED_LANGS": "The souce language is not in the list of supported languages.",
+        "dest_lang is None": "The destination language was not received.",
+        "dest_lang not in SUPPORTED_LANGS": "The destination language is not in the list of supported languages."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "One of the translated tags triggered a duplicate entry error.",
+        "ConnectionError": "Failed to connect with the ollama API.",
+        "AssertionError": "The API response was not in the expected format."
+    }
+}

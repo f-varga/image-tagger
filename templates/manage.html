@@ -22,13 +22,16 @@
                     tagInfo: "{{ url_for('tag_info') }}",
                     loadImage: "{{ url_for('load_image') }}",
                     updateTag: "{{ url_for('update_tag') }}",
-                    deleteTags: "{{ url_for('delete_tags')}}"
+                    deleteTags: "{{ url_for('delete_tags')}}",
+                    translateTags: "{{ url_for('translate_tags') }}"
                 },
+                lang: "{{ lang }}",
                 listFormatter: new Intl.ListFormat("{{ lang }}", {
                     style: "long",
                     type: "conjunction",
                 }),
                 pluralRules: new Intl.PluralRules("{{ lang }}"),
+                apiNotConfigured: {{ api_not_configured }},
                 resources: {{ ui | safe }}
             };
         </script>
@@ -37,6 +40,7 @@
         <div class="toolbar">
             <div><strong>{{ loc_toolbar_title }}</strong></div>
             <div class="button-row">
+                <button id="retranBtn" type="button" disabled>{{ loc_toolbar_retranslate }}</button>
                 <button id="deleteBtn" type="button" disabled><i class="fa-solid fa-triangle-exclamation"></i> {{ loc_toobar_delete }}</button>
                 <button id="deduplBtn" type="button" disabled>{{ loc_toolbar_de_duplicate }}</button>
             </div>

@@ -1,0 +1,9 @@
+{
+    "validation": {
+        "not name or not name.strip()": "The tag name is required, but was not present.",
+        "content_lang not in SUPPORTED_LANGS": "The language of the content is not currently supported."
+    },
+    "except": {
+        "sqlite3.IntegrityError": "The tag name you provided already exists in the database. Tag names must be unique."
+    }
+}

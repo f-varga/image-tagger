@@ -11,10 +11,12 @@
         "loc_add_tag_desc": "Description...",
         "loc_add_tag_manage": "Gérer",
         "loc_add_tag_add": "Ajouter",
-        "loc_alert_ack": "OK"
+        "loc_alert_ack": "OK",
+        "loc_content_lang": "La langue de l'étiquette",
+        "loc_select_content_lang": "-- sélectionner la langue --"
     },
     "ui": {
         "GENERIC_COMMUNICATION_ERROR": "Une erreur inattendue est survenue lors de la communication avec le serveur.",
-        "toggleAddedTag.fail": "Échec de l'activation/désactivation de l'étiquette nouvellement ajoutée \"{tag}\" pour l'image : \"{fn}\"."
+        "toggleAddedTag.fail": "Échec de l'activation de l'étiquette nouvellement ajoutée \"{tag}\" pour l'image\u00A0: \"{fn}\"."
     }
 }

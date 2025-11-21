@@ -25,8 +25,10 @@
                     addTag: "{{ url_for('add_tag') }}",
                     tagInfo: "{{ url_for('tag_info') }}",
                     latest: "{{ url_for('latest') }}",
-                    searchImages: "{{ url_for('search_images') }}"
+                    searchImages: "{{ url_for('search_images') }}",
+                    translateTags: "{{ url_for('translate_tags') }}"
                 },
+                apiNotConfigured: {{ api_not_configured }},
                 resources: {{ ui | safe }}
             };
         </script>
@@ -82,7 +84,17 @@
                         <div class="wrapper" style="width: 100%;">
                             <form id="addTag" action="#">
                                 <div class="field-wrapper">
-                                    <input type="text" id="tagName" name="tagName" placeholder="{{ loc_add_tag_name }}" autocomplete="off">
+                                    <div class="select-wrapper">
+                                        <select title="{{ loc_content_lang }}" id="contentLanguage" name="contentLanguage" required>
+                                            <option value="" disabled selected>{{ loc_select_content_lang }}</option>
+                                            {% for code, label in langs.items() %}
+                                            <option value="{{ code }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="field-wrapper">
+                                    <input type="text" id="tagName" name="tagName" placeholder="{{ loc_add_tag_name }}" autocomplete="off" required>
                                 </div>
                                 <div class="field-wrapper">
                                     <textarea id="tagDescription" name="tagDescription" placeholder="{{ loc_add_tag_desc }}"></textarea>

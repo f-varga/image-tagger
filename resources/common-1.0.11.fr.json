@@ -2,5 +2,12 @@
     "except": {
         "json.JSONDecodeError": "Les données de la requête ont peut-être été corrompues.",
         "sqlite3.OperationalError": "Une erreur d'accès à la base de données est survenue. Veuillez vérifier que le fichier de la base de données n'a pas été corrompu et qu'il n'est pas utilisé par un autre processus."
+    },
+    "langs": {
+        "en": "Anglais",
+        "fr": "Français"
+    },
+    "ui": {
+        "GENERIC_COMMUNICATION_ERROR": "Une erreur inattendue est survenue lors de la communication avec le serveur."
     }
 }

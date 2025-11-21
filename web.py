@@ -4,6 +4,7 @@ Image Tagger flask application.
 
 from collections import defaultdict
 import functools
+from http.client import HTTPConnection
 from io import BytesIO
 import json
 import os
@@ -17,8 +18,11 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 import click
 from flask import Flask, abort, current_app, g, jsonify, render_template, request, send_file
 
-VERSION = "1.0.11"
-SUPPORTED_LANGS = ["en", "fr", "ja"]
+VERSION = "1.0.12"
+SUPPORTED_LANGS = {
+    "en": "English",
+    "fr": "French"
+}
 DEFAULT_LANG = "en"
 
 app = Flask("Image Tagger")
@@ -65,6 +69,7 @@ def bump_resources_version():
         'load_image',
         'tags',
         'image_tags',
+        "translate_tags",
         'add_tag',
         'toggle_tags',
         'tag_info',
@@ -74,7 +79,7 @@ def bump_resources_version():
         'latest',
     ]
     ep_group = "|".join(map(re.escape, endpoints))
-    lang_group = "|".join(map(re.escape, SUPPORTED_LANGS))
+    lang_group = "|".join(map(re.escape, SUPPORTED_LANGS.keys()))
     version_pattern = r"\d+\.\d+\.\d+[ab]?"
     pattern = re.compile(rf"^({ep_group})-({version_pattern})\.({lang_group})\.json$")
 
@@ -114,7 +119,7 @@ def with_localization(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         # Detect best match from Accept-Language headers
-        lang = request.accept_languages.best_match(SUPPORTED_LANGS)
+        lang = request.accept_languages.best_match(SUPPORTED_LANGS.keys())
 
         # If no match, fall back to default
         if lang is None:
@@ -174,7 +179,7 @@ def _error_image(status, message):
 def server_error(err):
     """Handle errors gracefully."""
 
-    lang = request.accept_languages.best_match(SUPPORTED_LANGS)
+    lang = request.accept_languages.best_match(SUPPORTED_LANGS.keys())
     if lang is None:
         lang = DEFAULT_LANG
 
@@ -203,16 +208,24 @@ def server_error(err):
 def root(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """The main page of the application."""
 
+    ollama_translate_prompt = current_app.config.get("OLLAMA_TRANSLATE_TAGS_PROMPT", None)
+    ollama_model = current_app.config.get("OLLAMA_MODEL", None)
+    ollama_host = current_app.config.get("OLLAMA_HOST")
+    ollama_port = current_app.config.get("OLLAMA_PORT")
+    api_not_configured = (ollama_translate_prompt is None
+                          or ollama_model is None
+                          or ollama_host is None
+                          or ollama_port is None)
+
     context = {
         "VERSION": VERSION,
         "lang": lang,
+        "langs": resources.get("langs"),
+        "ui": json.dumps(resources.get("ui")),
+        "api_not_configured": "true" if api_not_configured else "false",
     }
 
-    if "template" in resources:
-        context.update(resources.get("template"))
-
-    if "ui" in resources:
-        context["ui"] = json.dumps(resources.get("ui"))
+    context.update(resources.get("template"))
 
     return render_template("index.html", **context), 200, { "Content-Language": lang }
 
@@ -222,16 +235,22 @@ def root(lang: str, resources: Mapping[str, Mapping[str, Any]]):
 def tag_management(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """The page that allows managing tags."""
 
+    ollama_translate_prompt = current_app.config.get("OLLAMA_TRANSLATE_TAGS_PROMPT", None)
+    ollama_model = current_app.config.get("OLLAMA_MODEL", None)
+    ollama_host = current_app.config.get("OLLAMA_HOST")
+    ollama_port = current_app.config.get("OLLAMA_PORT")
+    api_not_configured = (ollama_translate_prompt is None
+                          or ollama_model is None
+                          or ollama_host is None
+                          or ollama_port is None)
     context = {
         "VERSION": VERSION,
         "lang": lang,
+        "ui": json.dumps({**resources.get("ui"), "langs": resources.get("langs") }),
+        "api_not_configured": "true" if api_not_configured else "false",
     }
 
-    if "template" in resources:
-        context.update(resources.get("template"))
-
-    if "ui" in resources:
-        context["ui"] = json.dumps(resources.get("ui"))
+    context.update(resources.get("template"))
 
     return render_template("manage.html", **context), 200, { "Content-Language": lang }
 
@@ -380,14 +399,31 @@ def load_image(lang: str, # pylint: disable=unused-argument
 def tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Loads the list of tags"""
 
+    extended = request.args.get("extended", "false") == "true"
+
     c = None
     try:
         db = _get_db()
         c = db.cursor()
 
-        c.execute("SELECT tag_id, name, used FROM tags;")
+        c.execute(f"SELECT t.tag_id, COALESCE(tt.name, t.name) AS name, t.used, "
+                  f"t.lang, COALESCE(tt.description, t.description) AS description, "
+                  f"t.name AS original_name, t.description as original_description "
+                  f"FROM tags AS t LEFT JOIN tags_{lang} as tt ON t.tag_id = tt.tag_id;"
+                  if extended else
+                  f"SELECT t.tag_id, COALESCE(tt.name, t.name) AS name, t.used "
+                  f"FROM tags AS t LEFT JOIN tags_{lang} as tt ON t.tag_id = tt.tag_id;")
 
-        t = [{ "id": i, "name": n, "used": u } for i, n, u in c]
+        t = ([{
+                   "id": i,
+                   "name": n,
+                   "used": u,
+                   "lang": l,
+                   "description": d,
+                   "originalName": on,
+                   "originalDescription": od,
+              } for i, n, u, l, d, on, od in c] if extended
+             else [{ "id": i, "name": n, "used": u } for i, n, u in c])
 
         return t, 200, { "Content-Language": lang }
 
@@ -439,17 +475,171 @@ def image_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
             c.close()
 
 
+@app.route('/translateTags', methods=('POST',))
+@with_localization
+def translate_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
+    """Translate tags with an LLM using the ollama API"""
+
+    ollama_translate_prompt = current_app.config.get("OLLAMA_TRANSLATE_TAGS_PROMPT", None)
+    ollama_model = current_app.config.get("OLLAMA_MODEL", None)
+    ollama_host = current_app.config.get("OLLAMA_HOST")
+    ollama_port = current_app.config.get("OLLAMA_PORT")
+    ollama_prefered_translations = current_app.config.get("OLLAMA_PREFERRED_TRANSLATIONS", None)
+    def compile_prefered_translations(s_lang, d_lang):
+        if ollama_prefered_translations is None:
+            return ''
+        key = '-'.join([s_lang, d_lang])
+        if key not in ollama_prefered_translations:
+            return ''
+        note = ollama_prefered_translations['note']
+        notes = '\n'.join(note.format(source_term=s, dest_term=d)
+                          for s, d in ollama_prefered_translations[key])
+        return f"{ollama_prefered_translations['intro']}\n{notes}\n"
+
+    api_not_configured = (ollama_translate_prompt is None
+                          or ollama_model is None
+                          or ollama_host is None
+                          or ollama_port is None)
+    if api_not_configured:
+        return abort(500, resources.get("validation").get("api_not_configured"))
+
+    source_lang = request.form.get("sourceLang", None)
+    dest_lang = request.form.get("destLang", None)
+    tags_data = request.form.get("tags", None)
+
+    if tags_data is None:
+        return abort(400, resources.get("validation").get("tags_data is None"))
+
+    try:
+        tags_list = json.loads(tags_data)
+
+    except json.JSONDecodeError:
+        return abort(400, resources.get("except").get("json.JSONDecodeError"))
+
+    if not isinstance(tags_list, list):
+        return abort(400, resources.get("validation").get("not isinstance(tags_list, list)"))
+
+    if source_lang is None:
+        return abort(400, resources.get("validation").get("source_lang is None"))
+    if source_lang not in SUPPORTED_LANGS:
+        return abort(400, resources.get("validation").get("source_lang not in SUPPORTED_LANGS"))
+    if dest_lang is None:
+        return abort(400, resources.get("validation").get("dest_lang is None"))
+    if dest_lang not in SUPPORTED_LANGS:
+        return abort(400, resources.get("validation").get("dest_lang not in SUPPORTED_LANGS"))
+
+
+    conn = None
+    c = None
+    try:
+        conn = HTTPConnection(ollama_host, ollama_port, timeout=120)
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        prompt = ollama_translate_prompt.format(
+            source_lang=SUPPORTED_LANGS[source_lang],
+            dest_lang=SUPPORTED_LANGS[dest_lang],
+            tags=json.dumps(tags_list, indent="    "),
+            preferred_translations_notes=compile_prefered_translations(source_lang, dest_lang)
+        )
+        current_app.logger.debug("Translation prompt: %s", prompt)
+        payload = {
+            "model": ollama_model,
+            "prompt": prompt,
+            "format": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "The unique identifier for the tag."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the tag."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A brief description of the tag."
+                    }
+                    },
+                    "required": ["id", "name"]
+                }
+            },
+            "stream": False
+        }
+        conn.request("POST", "/api/generate", json.dumps(payload), headers)
+        resp = conn.getresponse()
+        assert resp.status == 200, \
+            f"Failed to get a response from the model (HTTP {resp.status})."
+        response_data = resp.read().decode('utf-8')
+        current_app.logger.debug("Response received: %s",
+                                 response_data)
+        ollama_response = json.loads(response_data)
+        model_output_string = ollama_response.get('response', '').strip()
+        assert model_output_string, f"The model output was empty: {response_data}."
+        translated_data = json.loads(model_output_string)
+        assert len(translated_data) > 0, "No translations were received from the model."
+
+        db = _get_db()
+        c = db.cursor()
+
+        for t in translated_data:
+            assert "id" in t and "name" in t and "description" in t, \
+                f"The model returned a malformed dictionary: {json.dumps(t)}"
+            c.execute(f"INSERT INTO tags_{dest_lang} VALUES (:id, :name, :description) "
+                      f"ON CONFLICT (tag_id) DO "
+                      f"UPDATE SET name = :name, description = :description "
+                      f"WHERE tag_id = :id;", t)
+
+        db.commit()
+
+        return {
+            "status": "success",
+            "translated": translated_data,
+        }, 200, { "Content-Language": lang }
+
+
+    except sqlite3.IntegrityError:
+        db.rollback()
+        current_app.logger.exception('Database Integrity Error.')
+        return abort(500,
+                     resources.get("except").get("sqlite3.IntegrityError"))
+    except sqlite3.OperationalError:
+        db.rollback()
+        current_app.logger.exception('Database Operational Error.')
+        return abort(500,
+                     resources.get("except").get("sqlite3.OperationalError"))
+    except ConnectionError:
+        current_app.logger.exception("Unable to connect to the model and get a translation.")
+        return abort(500, resources.get("except").get("ConnectionError"))
+    except AssertionError:
+        current_app.logger.exception("Failed to extract translation from the model response.")
+        return abort(500, resources.get("except").get("AssertionError"))
+    finally:
+        if conn is not None:
+            conn.close()
+        if c is not None:
+            c.close()
+
+
 @app.route('/addTag', methods=('POST',))
 @with_localization
 def add_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
     """Adds a new tag to the list of available tags"""
 
-    name = request.form.get('name', '')
+    name = request.form.get('name', None)
     description = request.form.get('description', None)
+    content_lang = request.headers.get("Content-Language", DEFAULT_LANG)
 
     if not name or not name.strip():
         return abort(400,
                      resources.get("validation").get("not name or not name.strip()"))
+    if content_lang not in SUPPORTED_LANGS:
+        return abort(400,
+                     resources.get("validation").get("content_lang not in SUPPORTED_LANGS"))
 
     name = name.strip()
     description = (description.strip()
@@ -463,8 +653,8 @@ def add_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
 
         db.execute("BEGIN")
 
-        c.execute("INSERT INTO tags (name, description, used) VALUES (?, ?, ?);",
-                  (name, description, 0))
+        c.execute("INSERT INTO tags (name, description, used, lang) VALUES (?, ?, ?, ?);",
+                  (name, description, 0, content_lang))
 
         tag_id = c.lastrowid
 
@@ -472,7 +662,9 @@ def add_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
 
         return {
             "id": tag_id,
+            "lang": content_lang,
             "name": name,
+            "description": description,
             "used": 0,
         }, 201, { "Content-Language": lang }
 
@@ -584,7 +776,9 @@ def tag_info(lang: str, resources: Mapping[str, Mapping[str, Any]]):
         db = _get_db()
         c = db.cursor()
 
-        c.execute("SELECT description, used FROM tags WHERE tag_id = ?;",
+        c.execute(f"SELECT COALESCE(tt.description, t.description) AS description, t.used "
+                  f"FROM tags AS t LEFT JOIN tags_{lang} as tt ON t.tag_id = tt.tag_id "
+                  f"WHERE t.tag_id = ?;",
                   (tag_id,))
         desc, used = c.fetchone()
 
@@ -651,7 +845,11 @@ def update_tag(lang: str, resources: Mapping[str, Mapping[str, Any]]):
         db.execute("BEGIN")
 
         params.append(tag_id)
-        c.execute(f"UPDATE tags SET {', '.join(fields)} WHERE tag_id = ?;", params)
+        c.execute(f"UPDATE OR IGNORE tags_{lang} SET {', '.join(fields)} WHERE tag_id = ?;",
+                  params)
+        params.append(lang)
+        c.execute(f"UPDATE tags SET {', '.join(fields)} WHERE tag_id = ? AND lang = ?;",
+                  params)
 
         db.commit()
 
@@ -804,6 +1002,11 @@ def delete_tags(lang: str, resources: Mapping[str, Mapping[str, Any]]):
             f"DELETE FROM tags WHERE tag_id IN ({', '.join('?' * len(tags_list))});",
             tags_list
         )
+        for l in SUPPORTED_LANGS:
+            c.execute(
+                f"DELETE FROM tags_{l} WHERE tag_id IN ({', '.join('?' * len(tags_list))});",
+                tags_list
+            )
 
         db.commit()
 
