@@ -21,7 +21,7 @@ from flask import Flask, abort, current_app, g, jsonify, render_template, reques
 VERSION = "1.0.12"
 SUPPORTED_LANGS = {
     "en": "English",
-    "fr": "French"
+    "fr": "French",
 }
 DEFAULT_LANG = "en"
 
@@ -77,6 +77,8 @@ def bump_resources_version():
         'de_duplicate',
         'delete_tags',
         'latest',
+        # common is not an endpoint but we should also bump it's version
+        'common',
     ]
     ep_group = "|".join(map(re.escape, endpoints))
     lang_group = "|".join(map(re.escape, SUPPORTED_LANGS.keys()))
