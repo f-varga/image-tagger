@@ -88,8 +88,8 @@ body {
     cursor: pointer;
 }
 
-.tag-name:hover,
-.tag-description:hover {
+.tag-name:not(.editing):hover,
+.tag-description:not(.editing):hover {
     background: #f0f0ff;
 }
 

@@ -105,6 +105,7 @@ window.onload = () => {
         input.className = 'editable';
         input.value = oldValue;
         element.replaceChildren(input);
+        element.classList.toggle("editing");
         input.focus();
 
         const save = async () => {
@@ -118,6 +119,7 @@ window.onload = () => {
                     document.createTextNode(ln)
                 ]).splice(1));
             }
+            element.classList.toggle("editing");
 
             if (newValue !== oldValue) {
                 const formData = new FormData();
