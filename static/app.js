@@ -584,6 +584,7 @@ window.onload = () => {
         }
     }
 
+    const crtImgProp = { naturalWidth: 0, naturalHeight: 0 };
     async function initImageViewer() {
 
         const resp = await fetch(config.urls.images);
@@ -601,23 +602,135 @@ window.onload = () => {
         images.length = 0;
         images.push(...await resp.json());
 
+        const viewer = document.getElementById('imageContainer');
+
         document.getElementById('pagerCrt').textContent = '1';
         document.getElementById('pagerAll').textContent = images.length.toFixed(0);
         document.getElementById('pagerPrevious').disabled = true;
         document.getElementById('pagerNext').disabled = images.length < 2;
 
-        document.getElementById('imageContainer').style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[0]), '")');
+        const imageUrl = `${config.urls.loadImage}?fn=${encodeURIComponent(images[0])}`;
+
+        viewer.style.backgroundImage = `url("${imageUrl}")`;
+
+        // Zoom in on mouse move
+        viewer.addEventListener("mousemove", (ev) => {
+            const rect = viewer.getBoundingClientRect();
+            const OFFSET_X = 50;
+            const OFFSET_Y = 100;
+
+            // Mouse position inside element (0–1 range)
+            const relX = (ev.clientX - rect.left) / rect.width;
+            const relY = (ev.clientY - rect.top) / rect.height;
+
+            const imageRatio = crtImgProp.naturalWidth / crtImgProp.naturalHeight;
+            const boxRatio   = rect.width / rect.height;
+
+            let normX = relX;
+            let normY = relY;
+
+            if (imageRatio > boxRatio) {
+                // Image is wider than the box → width fits, height letterboxes
+                // → vertical motion should be amplified
+                const scale = imageRatio / boxRatio; // > 1
+                normY = 0.5 + (relY - 0.5) * scale;
+            } else {
+                // Image is taller → height fits, width letterboxes
+                // → horizontal motion amplified
+                const scale = boxRatio / imageRatio; // > 1
+                normX = 0.5 + (relX - 0.5) * scale;
+            }
+
+            // Clamp to avoid overshoot beyond 0–1
+            normX = Math.min(1, Math.max(0, normX));
+            normY = Math.min(1, Math.max(0, normY));
+
+            const dirX = (normX - 0.5) * 2;
+            const dirY = (normY - 0.5) * 2;
+
+            // Calculate zoomed background size so it fits natural dimensions
+            // (Or: multiply by a fixed zoom factor)
+            const zoomWidth = crtImgProp.naturalWidth;
+            const zoomHeight = crtImgProp.naturalHeight;
+
+            viewer.style.backgroundSize = `${zoomWidth}px ${zoomHeight}px`;
+
+            const offsetX = dirX * (OFFSET_X / rect.width) * 100;
+            const offsetY = dirY * (OFFSET_Y / rect.height) * 100;
+
+            // Convert mouse position to background-position percentage
+            const posX = normX * 100 + offsetX;
+            const posY = normY * 100 + offsetY;
+
+            viewer.style.backgroundPosition = `${posX}% ${posY}%`;
+
+            viewer.style.cursor = "zoom-in";
+        });
+
+        // Reset on mouse leave
+        viewer.addEventListener("mouseleave", () => {
+            viewer.style.backgroundSize = "contain";
+            viewer.style.backgroundPosition = "center center";
+        });
+
+        const img = new Image();
+        img.src = imageUrl;
+        img.onload = () => {
+            crtImgProp.naturalWidth = img.naturalWidth;
+            crtImgProp.naturalHeight = img.naturalHeight;
+        };
 
         initTags();
     }
 
     async function initPager() {
 
-        const next = document.getElementById('pagerNext'),
-            previous = document.getElementById('pagerPrevious'),
-            crt = document.getElementById('pagerCrt'),
-            imageContainer = document.getElementById('imageContainer'),
-            jump = document.getElementById('pagerJump');
+        const next = document.getElementById('pagerNext');
+        const previous = document.getElementById('pagerPrevious');
+        const crt = document.getElementById('pagerCrt');
+        const imageContainer = document.getElementById('imageContainer');
+        const jump = document.getElementById('pagerJump');
+
+        const changeImage = (imageUrl) => {
+            imageContainer.style.backgroundImage = `url("${imageUrl}")`;
+
+            const img = new Image();
+            img.src = imageUrl;
+            img.onload = () => {
+                crtImgProp.naturalWidth = img.naturalWidth;
+                crtImgProp.naturalHeight = img.naturalHeight;
+            };
+        };
+
+        next.addEventListener('click', async () => {
+
+            const index = parseInt(crt.textContent);
+
+            changeImage(`${config.urls.loadImage}?fn=${encodeURIComponent(images[index])}`);
+
+            crt.textContent = (index + 1).toFixed(0);
+
+            previous.disabled = index <= 0;
+            next.disabled = index + 1 >= images.length;
+            jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
+
+            loadImageTags();
+        });
+
+        previous.addEventListener('click', async () => {
+
+            const index = parseInt(crt.textContent) - 2;
+
+            changeImage(`${config.urls.loadImage}?fn=${encodeURIComponent(images[index])}`);
+
+            crt.textContent = (index + 1).toFixed(0);
+
+            previous.disabled = index <= 0;
+            next.disabled = index + 1 >= images.length;
+            jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
+
+            loadImageTags();
+        });
 
         const resp = await fetch(config.urls.latest);
 
@@ -634,51 +747,25 @@ window.onload = () => {
         const latest = await resp.json();
         if (latest.fn === null) {
             jump.disabled = true;
-        } else {
-            jump.dataset["latest"] = latest.fn;
-            jump.addEventListener('click', () => {
-                jump.disabled = true;
-                delete jump.dataset["latest"];
-
-                const index = images.indexOf(latest.fn);
-                crt.textContent = (index + 1).toFixed(0);
-                imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[index]), '")');
-                previous.disabled = index <= 0;
-                next.disabled = index + 1 >= images.length;
-
-                loadImageTags();
-            }, { once: true });
+            return
         }
 
-        next.addEventListener('click', async () => {
+        jump.dataset["latest"] = latest.fn;
+        jump.addEventListener('click', () => {
+            delete jump.dataset["latest"];
 
-            const index = parseInt(crt.textContent);
-
-            imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[index]), '")');
-
-            crt.textContent = (index + 1).toFixed(0);
-
-            previous.disabled = index <= 0;
-            next.disabled = index + 1 >= images.length;
-            jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
-
-            loadImageTags();
-        });
-
-        previous.addEventListener('click', async () => {
-
-            const index = parseInt(crt.textContent) - 2;
-
-            imageContainer.style.backgroundImage = 'url("'.concat(config.urls.loadImage, '?fn=', encodeURIComponent(images[index]), '")');
+            const index = images.indexOf(latest.fn);
+            
+            changeImage(`${config.urls.loadImage}?fn=${encodeURIComponent(images[index])}`);
 
             crt.textContent = (index + 1).toFixed(0);
 
             previous.disabled = index <= 0;
             next.disabled = index + 1 >= images.length;
-            jump.disabled = !jump.dataset["latest"] || images[index] === jump.dataset["latest"] || images.indexOf(jump.dataset["latest"]) < 0;
+            jump.disabled = true;
 
             loadImageTags();
-        });
+        }, { once: true });
     }
 
     function initSearch() {
