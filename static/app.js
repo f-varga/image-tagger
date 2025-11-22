@@ -189,7 +189,8 @@ window.onload = () => {
                         "details": {
                             "tagId": tag.id,
                             "field": "name",
-                            "newValue": tag.name
+                            "newValue": tag.name,
+                            "lang": opt.value
                         }
                     });
                     requestAnimationFrame(() => broadcastChannel.postMessage({
@@ -197,7 +198,8 @@ window.onload = () => {
                         "details": {
                             "tagId": tag.id,
                             "field": "description",
-                            "newValue": tag.description
+                            "newValue": tag.description,
+                            "lang": opt.value
                         }
                     }));
                 }
@@ -295,7 +297,7 @@ window.onload = () => {
                 });
             }
 
-            if (type === "tagUpdated") {
+            if (type === "tagUpdated" && details.lang == config.lang) {
                 const updated = tags.find(t => t.id === details.tagId);
                 if (!updated) {
                     return;
@@ -1108,7 +1110,7 @@ window.onload = () => {
 
             const { type, details } = e.data;
 
-            if (type === "tagUpdated" && details.field === "name") {
+            if (type === "tagUpdated" && details.lang == config.lang && details.field === "name") {
                 const el = searchBar.querySelector(`div[data-tag-id="${details.tagId}"]`);
                 if (el) {
                     el.replaceChildren(

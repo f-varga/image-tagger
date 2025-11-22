@@ -28,6 +28,7 @@
                     searchImages: "{{ url_for('search_images') }}",
                     translateTags: "{{ url_for('translate_tags') }}"
                 },
+                lang: "{{ lang }}",
                 apiNotConfigured: {{ api_not_configured }},
                 resources: {{ ui | safe }}
             };
@@ -40,7 +41,7 @@
                     <div class="search-pane">
                         <div class="wrapper">
                             <div class="search-bar">
-                                <input type="text" id="searchInput" name="searchInput" placeholder="{{ loc_search }}">
+                                <input type="text" id="searchInput" name="searchInput" placeholder="{{ loc_search }}" lang="{{ lang }}">
                             </div>
                         </div>
                     </div>
@@ -70,7 +71,7 @@
                     <div class="search-pane">
                         <div class="wrapper">
                             <div class="filter-bar">
-                                <input id="filterTags" name="filterTags" type="text" placeholder="{{ loc_filter }}">
+                                <input id="filterTags" name="filterTags" type="text" placeholder="{{ loc_filter }}" lang="{{ lang }}">
                                 <button id="clearTagsFilter" type="button">&#x2297;</button>
                             </div>
                         </div>

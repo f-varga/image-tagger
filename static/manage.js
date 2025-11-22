@@ -73,7 +73,7 @@ window.onload = () => {
             const row = await buildTagRow(details);
             container.appendChild(row);
         }
-        if (type === "tagUpdated") {
+        if (type === "tagUpdated" && details.lang == config.lang) {
             if (details.field === "name") {
                 const el = container.querySelector(`div[data-tag-id="${details.tagId}"] .tag-name`);
                 if (!el) {
@@ -142,7 +142,8 @@ window.onload = () => {
                     "details": {
                         "tagId": tagId,
                         "field": field,
-                        "newValue": newValue
+                        "newValue": newValue,
+                        "lang": config.lang
                     }
                 });
             }
@@ -387,7 +388,8 @@ window.onload = () => {
                         "details": {
                             "tagId": tag.id,
                             "field": "name",
-                            "newValue": tag.name
+                            "newValue": tag.name,
+                            "lang": config.lang
                         }
                     });
                     requestAnimationFrame(() => broadcastChannel.postMessage({
@@ -395,7 +397,8 @@ window.onload = () => {
                         "details": {
                             "tagId": tag.id,
                             "field": "description",
-                            "newValue": tag.description
+                            "newValue": tag.description,
+                            "lang": config.lang
                         }
                     }));
                 }
