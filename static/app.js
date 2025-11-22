@@ -46,6 +46,11 @@ window.onload = () => {
         const descriptionInput = document.getElementById("tagDescription");
         const container = document.getElementById("tagsContainer");
 
+        contentLangInput.addEventListener("change", () => {
+            nameInput.lang = contentLangInput.value;
+            descriptionInput.lang = contentLangInput.value;
+        });
+
         form.addEventListener("submit", async (e) => {
 
             e.preventDefault();
@@ -57,6 +62,9 @@ window.onload = () => {
             }
 
             const description = descriptionInput.value.trim();
+
+            nameInput.value = '';
+            descriptionInput.value = '';
 
             const formData = new FormData();
             formData.append('name', name);
@@ -73,6 +81,8 @@ window.onload = () => {
                 } else {
                     alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
                 }
+                nameInput.value = name;
+                descriptionInput.value = description;
                 return;
             }
 
