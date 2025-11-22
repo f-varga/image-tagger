@@ -88,6 +88,17 @@ body {
     cursor: pointer;
 }
 
+.tag-description.editing {
+    height: 100%;
+    padding: 1px;
+}
+
+.tag-description textarea {
+    height: 100%;
+    box-sizing: border-box;
+    resize: none;
+}
+
 .tag-name:not(.editing):hover,
 .tag-description:not(.editing):hover {
     background: #f0f0ff;
@@ -119,15 +130,14 @@ body {
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
 }
 
-input.editable,
-textarea.editable {
+.tag-name input,
+.tag-description textarea {
     width: 100%;
     font-family: inherit;
     font-size: inherit;
     border: 1px solid #ccc;
     border-radius: 3px;
     padding: 4px;
-    resize: vertical;
 }
 
 .tag-images {

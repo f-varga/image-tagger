@@ -102,7 +102,6 @@ window.onload = () => {
 
         const oldValue = element.textContent;
         const input = document.createElement(field === 'name' ? 'input' : 'textarea');
-        input.className = 'editable';
         input.value = oldValue;
         element.replaceChildren(input);
         element.classList.toggle("editing");
