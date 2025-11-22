@@ -409,10 +409,11 @@ window.onload = () => {
         });
 
         let hoverId = null, tof = null;
-        container.addEventListener("mouseover", async (e) => {
+        container.addEventListener("mouseover", (e) => {
             if (!e.target.classList.contains('info-icon')) {
                 return;
             }
+
             const wrapper = e.target.closest('.tag-wrapper');
             const hid = wrapper.dataset["tagId"];
             if (hoverId !== hid) {
@@ -421,22 +422,24 @@ window.onload = () => {
                 }
                 hoverId = hid;
             }
-            const resp = await fetch(config.urls.tagInfo.concat("?tag=", encodeURIComponent(hoverId)));
 
-            if (!resp.ok) {
-                if (resp.headers.get("Content-Type").startsWith("application/json")) {
-                    const info = await resp.json();
-                    alertDialog(info.reason);
-                } else {
-                    alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
-                }
-                return;
-            }
-
-            const info = await resp.json();
+            const respPromise = fetch(config.urls.tagInfo.concat("?tag=", encodeURIComponent(hoverId)));
             let flyout = document.getElementById('flyout');
 
             tof = setTimeout(async () => {
+                const resp = await respPromise;
+                if (!resp.ok) {
+                    if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                        const info = await resp.json();
+                        alertDialog(info.reason);
+                    } else {
+                        alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
+                    }
+                    return;
+                }
+
+                const info = await resp.json();
+
                 if (!flyout) {
                     flyout = document.createElement('div');
                     flyout.setAttribute('id', 'flyout');
@@ -519,7 +522,7 @@ window.onload = () => {
                 flyout.style.display = 'none';
                 tof = null;
                 hoverId = null;
-            }, 100);
+            }, 50);
         });
     }
 
