@@ -23,21 +23,6 @@ window.onload = () => {
         });
     }
 
-    function alertDialog(message) {
-
-        const alertBox = document.getElementById('alertBox');
-        const ackBtn = document.getElementById('ackBtn');
-
-        document.getElementById('alertMessage').textContent = message;
-
-        alertBox.showPopover();
-
-        return new Promise(resolve => {
-
-            ackBtn.addEventListener('click', () => (resolve(true), alertBox.hidePopover()), { once: true });
-        });
-    }
-
     function initAddTag() {
 
         const form = document.getElementById("addTag");
@@ -542,7 +527,7 @@ window.onload = () => {
 
         const hue = 240 - (240 * (tag.used / maxUsed));
         const div = document.createElement('div');
-        div.classList.add('tag-wrapper');
+        div.className = 'tag-wrapper';
         div.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
         div.dataset["tagId"] = tag.id.toFixed(0);
         if (tagFilter.name) {
@@ -551,9 +536,7 @@ window.onload = () => {
         const label = document.createElement('label');
         label.setAttribute("for", `tag_${tag.id}`);
         const info = document.createElement('i');
-        info.classList.add('info-icon');
-        info.classList.add('fa-solid');
-        info.classList.add('fa-circle-info');
+        info.className = 'info-icon';
         label.appendChild(info);
         label.appendChild(document.createTextNode(tag.name));
         div.appendChild(label);

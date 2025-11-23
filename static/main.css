@@ -209,14 +209,25 @@ form {
 
 /* Custom arrow — THIS works */
 .select-wrapper::after {
-    content: "▾"; /* arrow symbol */
+    content: ""; /* arrow symbol */
     position: absolute;
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #666;
     pointer-events: none; /* click-through */
     font-size: 0.9rem;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-color: #333;
+    mask-image: url("icons/expand_circle_down_24.svg");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+    transition: background-color 0.2s ease-out;
+}
+
+.select-wrapper:hover::after {
+    background-color: #ff00ff;
 }
 
 /* Add button aligned to right */
@@ -298,6 +309,17 @@ form {
 
 .tag-wrapper .info-icon {
     margin-right: 5px;
+}
+
+.tag-wrapper .info-icon::after {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: #333;
+    mask-image: url("icons/help_24.svg");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
 }
 
 .tag-wrapper input[type="checkbox"] {
@@ -421,9 +443,7 @@ form {
 .search-tag span {
     margin-left: 0.4rem;
     cursor: pointer;
-    color: #888;
-    font-size: 1rem;
-    line-height: 1;
+    font-weight: bold;
 }
 
 .search-tag span:hover {
@@ -523,53 +543,18 @@ form {
     transition: color 0.2s ease;
 }
 
-.filter-bar button:hover {
-    color: #ff00ff;
+.filter-bar button::after {
+    content: "";
+    background-color: #333;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    mask-image: url("icons/backspace_24.svg");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+    transition: background-color 0.2s ease-out;
 }
 
-#alertBox {
-    border: 2px solid #ff00ff;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    padding: 16px;
-    font-family: Inter, sans-serif;
-    width: 300px;
-}
-
-/* Optional smooth appearance */
-@starting-style {
-    #alertBox:popover-open {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-}
-
-#alertBox:popover-open {
-    opacity: 1;
-    transform: scale(1);
-    transition: all 0.15s ease;
-}
-
-#alertBox div {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Inter', sans-serif;
-}
-
-#alertBox button {
-    border: none;
-    /* rounded corners */
-    border-radius: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    /* smooth hover effect */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.filter-bar button:hover::after {
     background-color: #ff00ff;
-    color: white;
-    width: 100px;
 }

@@ -1,0 +1,72 @@
+
+        <div id="alertBox" class="dialog" popover>
+            <div class="dialog-content">
+                <div id="alertIcon" class="dialog-icon failure"></div>
+                
+                <div class="dialog-text-container">
+                    <p id="alertMessage">All your base are belong to us.</p>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <button id="ackBtn" type="button" class="main-button">{{ loc_alert_ack | default('Guh') }}</button>
+            </div>
+        </div>
+
+        <div id="confirmBox" class="dialog" popover>
+            <div class="dialog-content">
+                <div class="dialog-icon confirm"></div>
+
+                <div class="dialog-text-container">
+                    <p id="confirmMessage">You sure about that?</p>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button id="cancelBtn" type="button">{{ loc_confirm_no | default('Nuh') }}</button>
+                <button id="okBtn" type="button" class="main-button">{{ loc_confirm_yes | default('Maybe') }}</button>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            function confirmDialog(message) {
+
+                const confirmBox = document.getElementById('confirmBox');
+                const okBtn = document.getElementById('okBtn');
+                const cancelBtn = document.getElementById('cancelBtn');
+
+                document.getElementById('confirmMessage').textContent = message;
+
+                confirmBox.showPopover();
+
+                return new Promise(resolve => {
+
+                    const ok = () => (resolve(true), confirmBox.hidePopover(), cancelBtn.removeEventListener("click", cancel));
+                    const cancel = () => (resolve(false), confirmBox.hidePopover(), okBtn.removeEventListener("click", ok));
+                    okBtn.addEventListener("click", ok, { once: true });
+                    cancelBtn.addEventListener("click", cancel, { once: true });
+                });
+            }
+
+            function alertDialog(message, success = false) {
+
+                const alertBox = document.getElementById('alertBox');
+                const icon = document.getElementById("alertIcon");
+                const ackBtn = document.getElementById('ackBtn');
+
+                if (success) {
+                    icon.classList.replace("failure", "success");
+                } else {
+                    icon.classList.replace("success", "failure");
+                }
+                
+                document.getElementById('alertMessage').textContent = message;
+
+                alertBox.showPopover();
+
+                return new Promise(resolve => {
+
+                    ackBtn.addEventListener('click', () => (resolve(true), alertBox.hidePopover()), { once: true });
+                });
+            }
+        </script>

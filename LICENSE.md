@@ -52,6 +52,26 @@ This project incorporates or uses several third-party components. Their respecti
 - **Details:** The full license text is included in this project as `OFL.txt`.
 - **Source:** [Google Fonts](https://fonts.google.com/specimen/Roboto+Mono)
 
+## Inter Font
+- **License:** SIL Open Font License (OFL)
+- **Details:** The full license text is included in this project as `OFL.txt`.
+- **Source:** [Google Fonts](https://fonts.google.com/specimen/Inter)
+
+## Google Material Symbols & Icons
+- **License:** Apache License, Version 2.0
+- **Details:** The full license text is included in this project as `APACHE-LICENSE-2.0.txt`
+- **Attribution:** This project incorporates icons and symbols sourced from the *Google Material Symbols & Icons* set. These materials are *Copyright 2024 Google LLC*. The included icons are:
+   * `icons/backspace_24.svg` Backspace
+   * `icons/delete_forever_24.svg` Delete Forever
+   * `icons/expand_circle_down_24.svg` Expand Circle Down
+   * `icons/frame_exclamation_48.svg` Frame Exclamation
+   * `icons/help_24.svg` Help
+   * `icons/published_with_changes_48.svg` Published With Changes
+   * `icons/stack_group_24.svg` Stack Group
+   * `icons/sync_problem_48.svg` Sync Problem
+   * `icons/translate_24.svg` Translate
+- **Required Notice** Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
 ## Flaticon Tag Icon
 - **License:** Custom attribution required.
 - **Attribution:** The tag icon (`favicon.ico`) is from Flaticon: [Price icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/price).

@@ -255,7 +255,7 @@ window.onload = () => {
         const resp = await fetch(config.urls.deDuplicate, { method: 'POST', body: formData });
 
         if (resp.ok) {
-            await alertDialog(formatMessage("deDuplicate.alertOK"));
+            await alertDialog(formatMessage("deDuplicate.alertOK"), true);
             
             const details = await resp.json();
             if (details.status !== "success") {
@@ -307,7 +307,7 @@ window.onload = () => {
         const resp = await fetch(config.urls.deleteTags, { method: 'POST', body: formData });
 
         if (resp.ok) {
-            await alertDialog(formatMessage("delete.alertOK", { n: tagNames.length }));
+            await alertDialog(formatMessage("delete.alertOK", { n: tagNames.length }), true);
             
             const details = await resp.json();
             if (details.status !== "success") {
@@ -375,7 +375,7 @@ window.onload = () => {
             const resp = await fetch(config.urls.translateTags, { method: 'POST', body: formData });
 
             if (resp.ok) {
-                await alertDialog(formatMessage("retran.alertOK", { n: tagNames.length, sourceLang: sourceLang, destLang: config.lang }));
+                await alertDialog(formatMessage("retran.alertOK", { n: tagNames.length, sourceLang: sourceLang, destLang: config.lang }), true);
                 
                 const details = await resp.json();
                 if (details.status !== "success") {
@@ -445,40 +445,6 @@ window.onload = () => {
 
         return template.replace(/\{(\w+)\}/g, (match, key) => {
             return key in values ? formatValue(values[key]) : match;
-        });
-    }
-
-    function confirmDialog(message) {
-
-        const confirmBox = document.getElementById('confirmBox');
-        const okBtn = document.getElementById('okBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-
-        document.getElementById('confirmMessage').textContent = message;
-
-        confirmBox.showPopover();
-
-        return new Promise(resolve => {
-
-            const ok = () => (resolve(true), confirmBox.hidePopover(), cancelBtn.removeEventListener("click", cancel));
-            const cancel = () => (resolve(false), confirmBox.hidePopover(), okBtn.removeEventListener("click", ok));
-            okBtn.addEventListener("click", ok, { once: true });
-            cancelBtn.addEventListener("click", cancel, { once: true });
-        });
-    }
-
-    function alertDialog(message) {
-
-        const alertBox = document.getElementById('alertBox');
-        const ackBtn = document.getElementById('ackBtn');
-
-        document.getElementById('alertMessage').textContent = message;
-
-        alertBox.showPopover();
-
-        return new Promise(resolve => {
-
-            ackBtn.addEventListener('click', () => (resolve(true), alertBox.hidePopover()), { once: true });
         });
     }
 

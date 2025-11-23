@@ -5,13 +5,8 @@
         <title>{{ loc_title }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app:version" content="{{ VERSION }}">
-        <link rel="stylesheet"
-              href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-        <link rel="stylesheet" 
-              href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-              crossorigin="anonymous"
-              referrerpolicy="no-referrer" />
         <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', filename='manage.css') }}">
         <script src="{{ url_for('static', filename='manage.js') }}"></script>
         <script type="text/javascript">
@@ -40,27 +35,14 @@
         <div class="toolbar">
             <div><strong>{{ loc_toolbar_title }}</strong></div>
             <div class="button-row">
-                <button id="retranBtn" type="button" disabled>{{ loc_toolbar_retranslate }}</button>
-                <button id="deleteBtn" type="button" disabled><i class="fa-solid fa-triangle-exclamation"></i> {{ loc_toobar_delete }}</button>
-                <button id="deduplBtn" type="button" disabled>{{ loc_toolbar_de_duplicate }}</button>
+                <button id="retranBtn" type="button" disabled><i class="icon icon-translate"></i> {{ loc_toolbar_retranslate }}</button>
+                <button id="deleteBtn" type="button" disabled><i class="icon icon-delete"></i> {{ loc_toobar_delete }}</button>
+                <button id="deduplBtn" type="button" disabled><i class="icon icon-deduplicate"></i> {{ loc_toolbar_de_duplicate }}</button>
             </div>
         </div>
 
         <div id="tagsContainer"></div>
 
-        <div id="confirmBox" popover>
-            <p id="confirmMessage">You sure about that?</p>
-            <div style="display:flex; justify-content:end; gap:8px;">
-                <button id="cancelBtn" type="button">{{ loc_confirm_no }}</button>
-                <button id="okBtn" type="button" style="background:#ff00ff; color:white;">{{ loc_confirm_yes }}</button>
-            </div>
-        </div>
-
-        <div id="alertBox" popover>
-            <p id="alertMessage">All your base are belong to us.</p>
-            <div style="display: flex; justify-content: center; align-items: center;">
-                <button id="ackBtn" type="button" style="background: #ff00ff; color: white;">{{ loc_alert_ack }}</button>
-            </div>
-        </div>
+        {% include 'partials/dialogs.html' with context %}
     </body>
 </html>

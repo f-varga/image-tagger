@@ -49,6 +49,27 @@ body {
     cursor: default;
 }
 
+.toolbar .icon {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: #fff;
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+}
+
+.toolbar .icon-translate {
+    mask-image: url("icons/translate_24.svg");
+}
+
+.toolbar .icon-delete {
+    mask-image: url("icons/delete_forever_24.svg");
+}
+
+.toolbar .icon-deduplicate {
+    mask-image: url("icons/stack_group_24.svg");
+}
+
 #tagsContainer {
     padding: 10px;
 }
@@ -155,41 +176,4 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
-}
-
-[popover] {
-    border: 2px solid #ff00ff;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    padding: 16px;
-    font-family: Inter, sans-serif;
-    width: 300px;
-}
-
-/* Optional smooth appearance */
-@starting-style {
-    [popover]:popover-open {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-}
-
-[popover]:popover-open {
-    opacity: 1;
-    transform: scale(1);
-    transition: all 0.15s ease;
-}
-
-[popover] button {
-    border: none;
-    /* rounded corners */
-    border-radius: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    /* smooth hover effect */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100px;
 }
