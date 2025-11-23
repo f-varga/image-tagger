@@ -73,15 +73,47 @@ window.onload = () => {
             const row = await buildTagRow(details);
             container.appendChild(row);
         }
-        if (type === "tagUpdated" && details.lang == config.lang) {
-            if (details.field === "name") {
+        if (type === "tagUpdated") {
+            if (details.field === "name" && details.lang == config.lang) {
                 const el = container.querySelector(`div[data-tag-id="${details.tagId}"] .tag-name`);
                 if (!el) {
                     return;
                 }
-                el.textContent = details.newValue;
+                if (el.matches('.editing')) {
+                    el.querySelector('input').value = details.newValue;
+                } else {
+                    el.textContent = details.newValue;
+                }
+                fixOrder(el, parseInt(el.dataset["used"]), details.newValue);
             }
-            if (details.field === "description") {
+            if (details.field === "used") {
+                const el = container.querySelector(`div[data-tag-id="${details.tagId}"] .tag-name`);
+                if (!el) {
+                    return;
+                }
+                el.dataset["used"] = details.newValue.toFixed(0);
+                fixOrder(el, details.newValue, (el.matches('.editing') ? el.querySelector('input').value : el.textContent));
+
+                const resp = await fetch(`${config.urls.tagInfo}?tag=${details.tagId}`);
+
+                if (!resp.ok) {
+                    if (resp.headers.get("Content-Type").startsWith("application/json")) {
+                        const info = await resp.json();
+                        alertDialog(info.reason);
+                    } else {
+                        alertDialog(formatMessage("GENERIC_COMMUNICATION_ERROR"))
+                    }
+                    return;
+                }
+
+                const info = await resp.json();
+                el.parentNode.querySelector('.tag-images').replaceChildren(...info.images.map(fn => {
+                    const img = document.createElement('div');
+                    img.style.backgroundImage = `url("${config.urls.loadImage}?fn=${encodeURIComponent(fn)}&tn=true")`;
+                    return img;
+                }));
+            }
+            if (details.field === "description" && details.lang == config.lang) {
                 const el = container.querySelector(`div[data-tag-id="${details.tagId}"] .tag-description`);
                 if (!el) {
                     return;
@@ -91,6 +123,26 @@ window.onload = () => {
                     document.createTextNode(ln)
                 ]).splice(1))
             }
+        }
+
+        function fixOrder(tagNameElement, tused, tname) {
+            let nextRow = null;
+            for (const tn of container.querySelectorAll('.tag-name')) {
+                if (tn === tagNameElement) {
+                    continue;
+                }
+                const name = tn.matches('.editing') ? tn.querySelector('input').value : tn.textContent;
+                const used = parseInt(tn.dataset["used"]);
+                if (used < tused) {
+                    nextRow = tn.parentNode;
+                    break;
+                }
+                if (used === tused && name.localeCompare(tname, config.lang) > 0) {
+                    nextRow = tn.parentNode;
+                    break;
+                }
+            }
+            container.insertBefore(tagNameElement.parentNode, nextRow);
         }
     };
 
@@ -140,10 +192,10 @@ window.onload = () => {
                 broadcastChannel.postMessage({
                     "type": "tagUpdated",
                     "details": {
-                        "tagId": tagId,
-                        "field": field,
-                        "newValue": newValue,
-                        "lang": config.lang
+                        tagId: tagId,
+                        field: field,
+                        newValue: newValue,
+                        lang: config.lang
                     }
                 });
             }
@@ -241,11 +293,7 @@ window.onload = () => {
             const info = await resp.json();
             const kept = container.querySelector(`div[data-tag-id="${tagId}"]`);
             kept.querySelector(".tag-name").dataset["used"] = info.used.toFixed(0);
-            kept.querySelector(".tag-description").replaceChildren(...info.description.split('\r\n').flatMap(ln => [
-                document.createElement('br'),
-                document.createTextNode(ln)
-            ]).splice(1));
-            kept.querySelector(".tagImages").replaceChildren(...info.images.map(fn => {
+            kept.querySelector(".tag-images").replaceChildren(...info.images.map(fn => {
                 const img = document.createElement('div');
                 img.style.backgroundImage = `url("${config.urls.loadImage}?fn=${encodeURIComponent(fn)}&tn=true")`;
                 return img;
@@ -386,19 +434,19 @@ window.onload = () => {
                     broadcastChannel.postMessage({
                         "type": "tagUpdated",
                         "details": {
-                            "tagId": tag.id,
-                            "field": "name",
-                            "newValue": tag.name,
-                            "lang": config.lang
+                            tagId: tag.id,
+                            field: "name",
+                            newValue: tag.name,
+                            lang: config.lang
                         }
                     });
                     requestAnimationFrame(() => broadcastChannel.postMessage({
                         "type": "tagUpdated",
                         "details": {
-                            "tagId": tag.id,
-                            "field": "description",
-                            "newValue": tag.description,
-                            "lang": config.lang
+                            tagId: tag.id,
+                            field: "description",
+                            newValue: tag.description,
+                            lang: config.lang
                         }
                     }));
                 }
@@ -468,7 +516,7 @@ window.onload = () => {
             if (b.used !== a.used) {
                 return b.used - a.used;
             }
-            return a.name.localeCompare(b.name);
+            return a.name.localeCompare(b.name, config.lang);
         });
 
         const fragment = await tags.map(buildTagRow).reduce(async (fragmentPromise, rowPromise) => {

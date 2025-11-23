@@ -23,6 +23,34 @@ window.onload = () => {
         });
     }
 
+    function reorderTags() {
+        const container = document.getElementById("tagsContainer");
+        
+        tags.sort((a, b) => {
+            if (b.used !== a.used) {
+                return b.used - a.used;
+            }
+            return a.name.localeCompare(b.name, config.lang);
+        });
+
+        const scrollTop = container.scrollTop;
+        requestAnimationFrame(() => {
+            const maxUsed = Math.max(...tags.map(t => t.used));
+            const elementMap = new Map(
+                Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
+            );
+            tags.forEach(t => {
+                const el = elementMap.get(t.id);
+                const hue = 240 - (240 * (t.used / maxUsed));
+                if (el) {
+                    el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
+                    container.appendChild(el);
+                }
+            });
+            container.scroll({ top: scrollTop, behavior: "instant" });
+        });
+    }
+
     function initAddTag() {
 
         const form = document.getElementById("addTag");
@@ -120,28 +148,19 @@ window.onload = () => {
             }
 
             tag.used += 1;
-            tags.sort((a, b) => {
-                if (b.used !== a.used) {
-                    return b.used - a.used;
+            broadcastChannel.postMessage({
+                "type": "tagUpdated",
+                "details": {
+                    tagId: tag.id,
+                    field: "used",
+                    newValue: tag.used
                 }
-                return a.name.localeCompare(b.name);
             });
 
-            requestAnimationFrame(() => {
-                const maxUsed = Math.max(...tags.map(t => t.used));
-                container.appendChild(buildContainerTag(tag, maxUsed, toggled));
-                const elementMap = new Map(
-                    Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
-                );
-                tags.forEach(t => {
-                    const el = elementMap.get(t.id);
-                    const hue = 240 - (240 * (t.used / maxUsed));
-                    if (el) {
-                        el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
-                        container.appendChild(el);
-                    }
-                });
-            });
+            const maxUsed = Math.max(...tags.map(t => t.used));
+            container.appendChild(buildContainerTag(tag, maxUsed, toggled));
+            
+            reorderTags();
         }
 
         async function translateAddedTag(tag) {
@@ -182,19 +201,19 @@ window.onload = () => {
                     broadcastChannel.postMessage({
                         "type": "tagUpdated",
                         "details": {
-                            "tagId": tag.id,
-                            "field": "name",
-                            "newValue": tag.name,
-                            "lang": opt.value
+                            tagId: tag.id,
+                            field: "name",
+                            newValue: tag.name,
+                            lang: opt.value
                         }
                     });
                     requestAnimationFrame(() => broadcastChannel.postMessage({
                         "type": "tagUpdated",
                         "details": {
-                            "tagId": tag.id,
-                            "field": "description",
-                            "newValue": tag.description,
-                            "lang": opt.value
+                            tagId: tag.id,
+                            field: "description",
+                            newValue: tag.description,
+                            lang: opt.value
                         }
                     }));
                 }
@@ -222,7 +241,7 @@ window.onload = () => {
             if (b.used !== a.used) {
                 return b.used - a.used;
             }
-            return a.name.localeCompare(b.name);
+            return a.name.localeCompare(b.name, config.lang);
         });
 
         const container = document.getElementById("tagsContainer");
@@ -270,26 +289,7 @@ window.onload = () => {
                     }
                 }
                 kept.used += removed.reduce((p, c) => p + c.used, 0);
-                tags.sort((a, b) => {
-                    if (b.used !== a.used) {
-                        return b.used - a.used;
-                    }
-                    return a.name.localeCompare(b.name);
-                });
-                requestAnimationFrame(() => {
-                    const elementMap = new Map(
-                        Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
-                    );
-                    const maxUsed = Math.max(...tags.map(t => t.used));
-                    tags.forEach(tag => {
-                        const el = elementMap.get(tag.id);
-                        const hue = 240 - (240 * (t.used / maxUsed));
-                        if (el) {
-                            el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
-                            container.appendChild(el);
-                        }
-                    });
-                });
+                reorderTags();
             }
 
             if (type === "tagUpdated" && details.lang == config.lang) {
@@ -307,13 +307,13 @@ window.onload = () => {
                 }
                 const infoIcon = el.firstChild;
                 el.replaceChildren(infoIcon, document.createTextNode(details.newValue));
+                reorderTags();
             }
         };
 
-
         loadImageTags();
 
-        let top = null, tor = null;
+        let top = null;
         let pending = {};
 
         container.addEventListener("change", (e) => {
@@ -329,32 +329,17 @@ window.onload = () => {
                 }
 
                 t.used += e.target.checked ? 1 : -1;
-            }
-            tags.sort((a, b) => {
-                if (b.used !== a.used) {
-                    return b.used - a.used;
-                }
-                return a.name.localeCompare(b.name);
-            });
 
-            if (tor) {
-                clearTimeout(tor);
-            }
-
-            setTimeout(() => {
-                const elementMap = new Map(
-                    Array.from(container.children).map(el => [parseInt(el.dataset["tagId"]), el])
-                );
-                const maxUsed = Math.max(...tags.map(t => t.used));
-                tags.forEach(tag => {
-                    const el = elementMap.get(tag.id);
-                    const hue = 240 - (240 * (tag.used / maxUsed));
-                    if (el) {
-                        el.style.setProperty("--tag-color", `hsl(${hue}, 80%, 92%)`);
-                        container.appendChild(el);
+                broadcastChannel.postMessage({
+                    type: "tagUpdated",
+                    details: {
+                        tagId: tagId,
+                        field: "used",
+                        newValue: t.used
                     }
                 });
-            }, 3e3);
+            }
+            reorderTags();
 
             if (!pending[fileName]) {
                 pending[fileName] = [tagId];
