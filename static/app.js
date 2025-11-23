@@ -1196,24 +1196,27 @@ window.onload = () => {
             }
 
             const tagToKeepInView = centermostTag();
-            const tr = tagToKeepInView.getBoundingClientRect();
-            const cr = container.getBoundingClientRect();
-            const oldTop = tr.top - cr.top;
+
+            if (tagToKeepInView) {
+                const tr = tagToKeepInView.getBoundingClientRect();
+                const cr = container.getBoundingClientRect();
+                const oldTop = tr.top - cr.top;
+
+                if (newVal === null) {
+                    requestAnimationFrame(() => {
+                        const tr = tagToKeepInView.getBoundingClientRect();
+                        const cr = container.getBoundingClientRect();
+                        const newTop = tr.top - cr.top;
+
+                        container.scrollBy({ top: newTop - oldTop, behavior: "instant" });
+                    });
+                }
+            }
 
             const flt = tags.filter(t => tagFilter.name === null || t.name.search(tagFilter.name) >= 0).map(t => t.id);
             for (const el of container.querySelectorAll('.tag-wrapper')) {
                 const tagId = parseInt(el.dataset["tagId"]);
                 el.style.display = flt.indexOf(tagId) < 0 ? 'none' : '';
-            }
-
-            if (newVal === null) {
-                requestAnimationFrame(() => {
-                    const tr = tagToKeepInView.getBoundingClientRect();
-                    const cr = container.getBoundingClientRect();
-                    const newTop = tr.top - cr.top;
-
-                    container.scrollBy({ top: newTop - oldTop, behavior: "instant" });
-                });
             }
         };
 
